@@ -1,0 +1,6 @@
+*.swp
+*.swo
+now2.json
+templates/*.html
+node_modules/*
+bower_components/*

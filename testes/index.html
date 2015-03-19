@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+      <meta charset="utf-8">
+<script src="../bower_components/jquery/dist/jquery.min.js"></script>
+<script src="../dist/slsapi.js"></script>
+<script>
+
+var api = new SLSAPI({})
+
+function check_status_logado(){
+    if (api.user.isLogged()){
+        $('#usuario').html('Olá '+api.user.getUsuario())
+        $('#notes').empty()
+        api.user.getNotes(function (notas){
+            notas.forEach(function(i){
+                if (!i.fotoURL)
+                $('#notes').append('<li>'+i.user.username+' comentou "'+i.comentarios+'" em '+i.data_hora+
+                    '<a href="#" onclick="api.notes.delete('+i.id+',check_status_logado)">delete</a></li>'); 
+            })
+         });
+        $('#logado').show()        
+        $('#deslogado').hide()        
+    }else{
+        $('#logado').hide()        
+        $('#deslogado').show()         
+   }
+}
+
+$(document).ready(function (){
+   check_status_logado()
+   
+   $('#login').on('click',function(){
+        u = $('#username').val()
+        p = $('#password').val()
+        api.user.login(u,p)    
+   })
+
+   $('#logout').on('click',function(){
+        api.user.logout(check_status_logado)
+   })
+
+   $('#addnote').on('click',function(){
+       ob = {}
+       ob.comentarios = $('#comentarios').val();
+       ob.categoria = $('#categoria').val();
+       ob.user_id= api.user.user_id;
+       note = new SLSAPI.notes.Note(ob)
+       api.notes.enviar(note)
+   })
+
+   $(document).on('slsapi.user:loginFinish slsapi.user:loginFail slsapi.note:uploadFinish',function(){
+    check_status_logado()      
+   })
+});
+</script>
+</head>
+<body>
+<div id='deslogado'>
+    <p>login: <input id='username' value=''></p>
+    <p>senha: <input id='password' value=''></p>
+    <p><button type='button' id='login' value='logar'>logar</button></p>
+</div>
+
+<div id='logado'>
+    <p id='usuario'></p>
+    <p><button type='button' id='logout' value='deslogar'>deslogar</button></p>
+</div>
+    <hr/> <!-- ---------------------------------------- -->
+
+    <div>
+        <p>categoria: <input id='categoria' value=''></p>
+        <p>comentarios: <input id='comentarios' value=''></p>
+        <p><button type='button' id='addnote' value='adicionar nota'>adicionar nota</button></p>
+    </div>
+    <p>Notas sem foto do usuario:</p>
+    <ul id='notes'> </ul>
+
+</html>

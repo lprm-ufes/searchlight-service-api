@@ -1,0 +1,26 @@
+{
+  "name": "slsapi.js",
+  "version": "0.0.1",
+  "authors": [
+    "wancharle sebastião quirino <wancharle@gmail.com>"
+  ],
+  "description": "Api de acesso para o searchlight-service",
+  "main": "./dist/slsapi.js",
+  "keywords": [
+    "searchlight",
+    "api",
+    "service"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {
+    "jquery": "~2.1.3"
+  }
+}
