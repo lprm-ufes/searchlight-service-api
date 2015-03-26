@@ -5,12 +5,14 @@ utils = require('./utils.coffee');
 
 Config = (function() {
   function Config(opcoes) {
+    this.id = md5(JSON.stringify(opcoes));
     this.opcoes = new utils.Dicionario(opcoes);
     this.serverURL = this.opcoes.get('serverURL', 'http://sl.wancharle.com.br');
     this.createURL = this.opcoes.get('createURL', this.serverURL + "/note/create/");
     this.loginURL = this.opcoes.get('loginURL', this.serverURL + "/user/login/");
     this.logoutURL = this.opcoes.get('logoutURL', this.serverURL + "/user/logout/");
     this.notesURL = this.opcoes.get('notesURL', this.serverURL + "/note/");
+    this.notebookURL = this.opcoes.get('notebookURL', this.serverURL + "/notebook/");
   }
 
   return Config;
@@ -23,18 +25,64 @@ module.exports = {
 
 
 
-},{"./utils.coffee":5}],2:[function(require,module,exports){
+},{"./utils.coffee":6}],2:[function(require,module,exports){
+var Notebook;
+
+Notebook = (function() {
+  Notebook.instances = {};
+
+  Notebook.getInstance = function(config) {
+    return this.instances[config.id];
+  };
+
+  function Notebook(config) {
+    Notebook.instances[config.id] = this;
+    this.config = config;
+  }
+
+  Notebook.prototype.getByName = function(notebookName, callback, callbackFail) {
+    var url;
+    if (callbackFail == null) {
+      callbackFail = null;
+    }
+    url = this.config.notebookURL + "?name=" + notebookName;
+    return $.get(url, function(data) {
+      console.log('ola');
+      return callback(data);
+    });
+  };
+
+  Notebook.prototype.getById = function(notebookId, callback, callbackFail) {
+    var url;
+    if (callbackFail == null) {
+      callbackFail = null;
+    }
+    url = this.config.notebookURL + "?id=" + notebookId;
+    return $.get(url, callback, callbackFail);
+  };
+
+  return Notebook;
+
+})();
+
+module.exports = {
+  'Notebook': Notebook
+};
+
+
+
+},{}],3:[function(require,module,exports){
 var Note, Notes;
 
 Note = (function() {
-  function Note(dados) {
+  function Note(dados, notebook) {
     this.categoria = dados.categoria;
     this.comentarios = dados.comentarios;
     this.fotoURI = dados.fotoURI;
     this.lat = dados.lat ? dados.lat : '40.0';
     this.lng = dados.lng ? dados.lng : '-20.0';
     this.accuracy = dados.accuracy;
-    this.user = dados.user_id ? dados.user_id : 1;
+    this.user = dados.user_id;
     this.data_hora = dados.data_hora;
   }
 
@@ -43,7 +91,14 @@ Note = (function() {
 })();
 
 Notes = (function() {
-  function Notes(config, dados) {
+  Notes.instances = {};
+
+  Notes.getInstance = function(config) {
+    return this.instances[config.id];
+  };
+
+  function Notes(config) {
+    Notes.instances[config.id] = this;
     this.config = config;
   }
 
@@ -64,8 +119,12 @@ Notes = (function() {
     });
   };
 
-  Notes.prototype.enviar = function(note, callback_ok, callback_fail) {
+  Notes.prototype.enviar = function(note, notebookId, callback_ok, callback_fail) {
     var ft, options, params;
+    if (!notebookId) {
+      console.error('NotebookId não foi informado!');
+      return;
+    }
     params = {};
     params.latitude = note.lat;
     params.longitude = note.lng;
@@ -74,7 +133,7 @@ Notes = (function() {
     params.categoria = note.categoria;
     params.comentarios = note.comentarios;
     params.data_hora = note.data_hora;
-    console.log(params);
+    params.notebook = notebookId;
     $(document).trigger('slsapi.note:uploadStart');
     if (note.fotoURI) {
       options = new FileUploadOptions();
@@ -115,16 +174,18 @@ module.exports = {
 
 
 
-},{}],3:[function(require,module,exports){
-var config, notes, user;
+},{}],4:[function(require,module,exports){
+var Config, Notebook, Notes, SLSAPI, User;
 
-notes = require('./notes.coffee');
+Notes = require('./notes.coffee').Notes;
 
-user = require('./user.coffee');
+Notebook = require('./notebook.coffee').Notebook;
 
-config = require('./config.coffee');
+User = require('./user.coffee').User;
 
-window.SLSAPI = (function() {
+Config = require('./config.coffee').Config;
+
+SLSAPI = (function() {
   function SLSAPI(opts) {
     $.ajaxSetup({
       crossDomain: true,
@@ -132,32 +193,41 @@ window.SLSAPI = (function() {
         withCredentials: true
       }
     });
-    this.config = new config.Config(opts);
-    this.user = new user.User(this.config);
-    this.notes = new notes.Notes(this.config);
+    this.config = new Config(opts);
+    this.user = new User(this.config);
+    this.notes = new Notes(this.config);
+    this.notebook = new Notebook(this.config);
   }
 
   return SLSAPI;
 
 })();
 
-SLSAPI.notes = notes;
+SLSAPI.Notes = Notes;
+
+if (typeof window !== "undefined") {
+  window.SLSAPI = SLSAPI;
+}
 
 
 
-},{"./config.coffee":1,"./notes.coffee":2,"./user.coffee":4}],4:[function(require,module,exports){
-var User, notes,
+},{"./config.coffee":1,"./notebook.coffee":2,"./notes.coffee":3,"./user.coffee":5}],5:[function(require,module,exports){
+var User,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-notes = require('./notes.coffee');
-
 User = (function() {
-  function User(config) {
-    this.config = config;
+  User.instances = {};
+
+  User.getInstance = function(config) {
+    return this.instances[config.id];
+  };
+
+  function User(config1) {
+    this.config = config1;
     this.login = bind(this.login, this);
+    User.instances[this.config.id] = this;
     this.storage = window.localStorage;
     this.usuario = this.getUsuario();
-    this.notes = new notes.Notes(this.config);
   }
 
   User.prototype.isLogged = function() {
@@ -209,12 +279,6 @@ User = (function() {
     return false;
   };
 
-  User.prototype.getNotes = function(callback) {
-    return this.notes.getByUser(this.user_id, function(data) {
-      return callback(data);
-    });
-  };
-
   return User;
 
 })();
@@ -225,7 +289,7 @@ module.exports = {
 
 
 
-},{"./notes.coffee":2}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 var Dicionario,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
@@ -255,4 +319,4 @@ module.exports = {
 
 
 
-},{}]},{},[3]);
+},{}]},{},[4]);

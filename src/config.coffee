@@ -1,6 +1,9 @@
 utils = require './utils.coffee'
+
 class Config
   constructor: (opcoes)->
+    @id = md5(JSON.stringify(opcoes))
+
     @opcoes = new utils.Dicionario(opcoes)
 
     @serverURL = @opcoes.get 'serverURL', 'http://sl.wancharle.com.br'
@@ -8,6 +11,7 @@ class Config
     @loginURL = @opcoes.get 'loginURL', "#{@serverURL}/user/login/"
     @logoutURL = @opcoes.get 'logoutURL', "#{@serverURL}/user/logout/"
     @notesURL = @opcoes.get 'notesURL', "#{@serverURL}/note/"
+    @notebookURL = @opcoes.get 'notebookURL', "#{@serverURL}/notebook/"
 
 module.exports={'Config':Config }
 

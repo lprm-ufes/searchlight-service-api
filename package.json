@@ -2,7 +2,7 @@
   "name": "searchlight-service-api",
   "version": "0.0.1",
   "description": "Api para utilização dos recursos do searchlight-service",
-  "main": "slsapi.js",
+  "main": "dist/slsapi.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

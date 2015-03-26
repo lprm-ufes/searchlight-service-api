@@ -1,17 +1,23 @@
 class Note
-  constructor: (dados) ->
+  constructor: (dados,notebook) ->
     @categoria = dados.categoria
     @comentarios = dados.comentarios
     @fotoURI = dados.fotoURI
     @lat =  if dados.lat then dados.lat else '40.0'
     @lng =  if dados.lng then dados.lng else '-20.0'
     @accuracy = dados.accuracy
-    @user = if dados.user_id then dados.user_id else 1
+    @user =  dados.user_id
     @data_hora = dados.data_hora
 
 
 class Notes
-  constructor: (config,dados) ->
+  @instances = {} 
+
+  @getInstance: (config) ->
+    return @instances[config.id]
+
+  constructor: (config) ->
+    Notes.instances[config.id] = @
     @config = config 
 
   getByUser: (user_id,callback) ->
@@ -24,7 +30,11 @@ class Notes
         crossDomain: true,
         success: (data)-> callback(data))
 
-  enviar: (note,callback_ok,callback_fail) ->
+  enviar: (note,notebookId, callback_ok,callback_fail) ->
+    if not notebookId
+      console.error('NotebookId não foi informado!')
+      return
+
     params = {}
     params.latitude = note.lat
     params.longitude = note.lng
@@ -33,7 +43,7 @@ class Notes
     params.categoria = note.categoria
     params.comentarios = note.comentarios
     params.data_hora = note.data_hora
-    console.log(params)
+    params.notebook = notebookId
 
     $(document).trigger('slsapi.note:uploadStart')
     if note.fotoURI

@@ -1,8 +1,9 @@
-notes  = require './notes.coffee'
-user  = require './user.coffee'
-config  = require './config.coffee'
+Notes = require('./notes.coffee').Notes
+Notebook = require('./notebook.coffee').Notebook
+User  = require('./user.coffee').User
+Config  = require('./config.coffee').Config
 
-class window.SLSAPI
+class SLSAPI
   constructor: (opts) ->
     $.ajaxSetup({
         crossDomain: true,
@@ -11,11 +12,15 @@ class window.SLSAPI
         },
     })
 
-    @config = new config.Config(opts)
-    @user = new user.User(@config)
-    @notes = new notes.Notes(@config)
+    @config = new Config(opts)
+    @user = new User(@config)
+    @notes = new Notes(@config)
+    @notebook = new Notebook(@config)
     
 
-SLSAPI.notes = notes
+SLSAPI.Notes = Notes
+if typeof window != "undefined" 
+  window.SLSAPI = SLSAPI
+
 # vim: set ts=2 sw=2 sts=2 expandtab:
 

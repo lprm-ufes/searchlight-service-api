@@ -1,10 +1,13 @@
-notes = require './notes.coffee'
 class User
+  @instances = {} 
+
+  @getInstance: (config) ->
+    return @instances[config.id]
 
   constructor: (@config)->
+    User.instances[@config.id] = @
     @storage = window.localStorage
     @usuario = this.getUsuario()
-    @notes = new notes.Notes(@config)
 
   isLogged: ()->
     return @getUsuario()
@@ -44,11 +47,8 @@ class User
         $(document).trigger('slsapi.user:loginFail')
         )
     return false
+   
 
-  getNotes: (callback)->
-    @notes.getByUser(@user_id,(data) -> callback(data))
-  
-    
 module.exports = {'User':User}
 # vim: set ts=2 sw=2 sts=2 expandtab:
 
