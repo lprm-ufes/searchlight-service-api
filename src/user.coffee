@@ -10,11 +10,19 @@ class User
     @usuario = this.getUsuario()
 
   isLogged: ()->
-    return @getUsuario()
+    usuario = @getUsuario()
+    if usuario
+      tempo_logado = ((new Date()).getTime() - @logginTime)/1000
+      if tempo_logado > 24*3600 # sessao expirou
+        return false
+
+    return true
+
 
   getUsuario: () ->
     @usuario = @storage.getItem('Usuario')
     @user_id = @storage.getItem('user_id')
+    @logginTime = @storage.getItem('logginTime')
     return @usuario
   
   setUsuario: (usuario,json)->
@@ -22,6 +30,7 @@ class User
     @usuario =  usuario
     @storage.setItem('Usuario',@usuario)
     @storage.setItem('user_id',@user_id)
+    @storage.setItem('logginTime',(new Date()).getTime())
 
   logout: (callback) ->
     @storage.removeItem('Usuario')

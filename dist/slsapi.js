@@ -231,12 +231,21 @@ User = (function() {
   }
 
   User.prototype.isLogged = function() {
-    return this.getUsuario();
+    var tempo_logado, usuario;
+    usuario = this.getUsuario();
+    if (usuario) {
+      tempo_logado = ((new Date()).getTime() - this.logginTime) / 1000;
+      if (tempo_logado > 24 * 3600) {
+        return false;
+      }
+    }
+    return true;
   };
 
   User.prototype.getUsuario = function() {
     this.usuario = this.storage.getItem('Usuario');
     this.user_id = this.storage.getItem('user_id');
+    this.logginTime = this.storage.getItem('logginTime');
     return this.usuario;
   };
 
@@ -244,7 +253,8 @@ User = (function() {
     this.user_id = json.id;
     this.usuario = usuario;
     this.storage.setItem('Usuario', this.usuario);
-    return this.storage.setItem('user_id', this.user_id);
+    this.storage.setItem('user_id', this.user_id);
+    return this.storage.setItem('logginTime', (new Date()).getTime());
   };
 
   User.prototype.logout = function(callback) {
