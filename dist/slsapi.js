@@ -124,9 +124,9 @@ Notes = (function() {
     });
   };
 
-  Notes.prototype.update = function(note_id, query, callback, callback_fail) {
+  Notes.prototype.update = function(note_id, queryparams, callback, callback_fail) {
     var xhr;
-    xhr = $.get(this.config.notesURL + "update/" + note_id + "/?" + query);
+    xhr = $.post(this.config.notesURL + "update/" + note_id + "/", queryparams);
     xhr.done(function(data) {
       return callback(data);
     });

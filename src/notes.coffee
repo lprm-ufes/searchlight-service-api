@@ -30,8 +30,8 @@ class Notes
     xhr.done( (data)-> callback(data))
     xhr.fail( () -> callback_fail())
 
-  update: (note_id,query,callback,callback_fail)->
-    xhr = $.get("#{@config.notesURL}update/#{note_id}/?#{query}")
+  update: (note_id,queryparams,callback,callback_fail)->
+    xhr = $.post("#{@config.notesURL}update/#{note_id}/",queryparams)
     xhr.done( (data)-> callback(data))
     xhr.fail( () -> callback_fail())
 
