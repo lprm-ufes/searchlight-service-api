@@ -48,14 +48,7 @@ class Notes
       console.error('NotebookId não foi informado!')
       return
 
-    params = {}
-    params.latitude = note.lat
-    params.longitude = note.lng
-    params.accuracy = note.accuracy
-    params.user = note.user
-    params.categoria = note.categoria
-    params.comentarios = note.comentarios
-    params.data_hora = note.data_hora
+    params = note
     params.notebook = notebookId
 
     $(document).trigger('slsapi.note:uploadStart')
