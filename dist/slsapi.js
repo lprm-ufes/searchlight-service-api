@@ -184,7 +184,7 @@ Notes = (function() {
       return $.post(this.config.createURL, params, function(json) {
         $(document).trigger('slsapi.note:uploadFinish');
         return callback_ok(json);
-      }, 'json').fail(function(r) {
+      }, 'json').fail(function(error) {
         $(document).trigger('slsapi.note:uploadFail');
         return callback_fail(error);
       });

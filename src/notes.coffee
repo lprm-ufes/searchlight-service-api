@@ -75,7 +75,7 @@ class Notes
       $.post(@config.createURL, params, (json) ->
         $(document).trigger('slsapi.note:uploadFinish')
         callback_ok(json)
-      ,'json').fail( (r) ->
+      ,'json').fail( (error) ->
         $(document).trigger('slsapi.note:uploadFail')
         callback_fail(error) 
       )
