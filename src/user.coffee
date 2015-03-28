@@ -11,12 +11,16 @@ class User
 
   isLogged: ()->
     usuario = @getUsuario()
+    
     if usuario
+      console.log(usuario)
       tempo_logado = ((new Date()).getTime() - @logginTime)/1000
       if tempo_logado > 24*3600 # sessao expirou
         return false
+      return true
+    else
+      return false
 
-    return true
 
 
   getUsuario: () ->

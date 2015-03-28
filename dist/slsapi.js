@@ -102,15 +102,36 @@ Notes = (function() {
     this.config = config;
   }
 
-  Notes.prototype.getByUser = function(user_id, callback) {
-    return $.get(this.config.notesURL + "?user=" + user_id, function(data) {
+  Notes.prototype.getByUser = function(user_id, callback, callback_fail) {
+    var xhr;
+    xhr = $.get(this.config.notesURL + "?user=" + user_id);
+    xhr.done(function(data) {
       return callback(data);
+    });
+    return xhr.fail(function() {
+      return callback_fail();
     });
   };
 
-  Notes.prototype.getByQuery = function(query, callback) {
-    return $.get(this.config.notesURL + "?" + query, function(data) {
+  Notes.prototype.getByQuery = function(query, callback, callback_fail) {
+    var xhr;
+    xhr = $.get(this.config.notesURL + "?" + query);
+    xhr.done(function(data) {
       return callback(data);
+    });
+    return xhr.fail(function() {
+      return callback_fail();
+    });
+  };
+
+  Notes.prototype.update = function(note_id, query, callback, callback_fail) {
+    var xhr;
+    xhr = $.get(this.config.notesURL + "update/" + note_id + "/?" + query);
+    xhr.done(function(data) {
+      return callback(data);
+    });
+    return xhr.fail(function() {
+      return callback_fail();
     });
   };
 
@@ -127,6 +148,12 @@ Notes = (function() {
 
   Notes.prototype.enviar = function(note, notebookId, callback_ok, callback_fail) {
     var ft, options, params;
+    if (callback_ok == null) {
+      callback_ok = (function() {});
+    }
+    if (callback_fail == null) {
+      callback_fail = (function() {});
+    }
     if (!notebookId) {
       console.error('NotebookId não foi informado!');
       return;
@@ -162,9 +189,11 @@ Notes = (function() {
       })(this), options);
     } else {
       return $.post(this.config.createURL, params, function(json) {
-        return $(document).trigger('slsapi.note:uploadFinish');
-      }, 'json').fail(function() {
-        return $(document).trigger('slsapi.note:uploadFail');
+        $(document).trigger('slsapi.note:uploadFinish');
+        return callback_ok(json);
+      }, 'json').fail(function(r) {
+        $(document).trigger('slsapi.note:uploadFail');
+        return callback_fail(error);
       });
     }
   };
@@ -240,12 +269,15 @@ User = (function() {
     var tempo_logado, usuario;
     usuario = this.getUsuario();
     if (usuario) {
+      console.log(usuario);
       tempo_logado = ((new Date()).getTime() - this.logginTime) / 1000;
       if (tempo_logado > 24 * 3600) {
         return false;
       }
+      return true;
+    } else {
+      return false;
     }
-    return true;
   };
 
   User.prototype.getUsuario = function() {

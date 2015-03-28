@@ -20,13 +20,22 @@ class Notes
     Notes.instances[config.id] = @
     @config = config 
 
-  getByUser: (user_id,callback) ->
-    $.get("#{@config.notesURL}?user=#{user_id}", (data)-> callback(data))
+  getByUser: (user_id,callback, callback_fail) ->
+    xhr = $.get("#{@config.notesURL}?user=#{user_id}")
+    xhr.done( (data)-> callback(data))
+    xhr.fail( () -> callback_fail())
 
-  getByQuery: (query,callback) ->
-    $.get("#{@config.notesURL}?#{query}", (data)-> callback(data))
-  
-    
+  getByQuery: (query,callback, callback_fail) ->
+    xhr = $.get("#{@config.notesURL}?#{query}")
+    xhr.done( (data)-> callback(data))
+    xhr.fail( () -> callback_fail())
+
+  update: (note_id,query,callback,callback_fail)->
+    xhr = $.get("#{@config.notesURL}update/#{note_id}/?#{query}")
+    xhr.done( (data)-> callback(data))
+    xhr.fail( () -> callback_fail())
+
+ 
   delete: (note_id,callback)->
     $.ajax(
         url: "#{@config.notesURL}#{note_id}",
@@ -34,7 +43,7 @@ class Notes
         crossDomain: true,
         success: (data)-> callback(data))
 
-  enviar: (note,notebookId, callback_ok,callback_fail) ->
+  enviar: (note,notebookId, callback_ok=(()->),callback_fail=(()->)) ->
     if not notebookId
       console.error('NotebookId não foi informado!')
       return
@@ -72,9 +81,10 @@ class Notes
     else
       $.post(@config.createURL, params, (json) ->
         $(document).trigger('slsapi.note:uploadFinish')
-      ,'json').fail( () ->
+        callback_ok(json)
+      ,'json').fail( (r) ->
         $(document).trigger('slsapi.note:uploadFail')
-
+        callback_fail(error) 
       )
  
 module.exports = {'Notes':Notes,'Note':Note}
