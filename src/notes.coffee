@@ -22,6 +22,10 @@ class Notes
 
   getByUser: (user_id,callback) ->
     $.get("#{@config.notesURL}?user=#{user_id}", (data)-> callback(data))
+
+  getByQuery: (query,callback) ->
+    $.get("#{@config.notesURL}?#{query}", (data)-> callback(data))
+  
     
   delete: (note_id,callback)->
     $.ajax(

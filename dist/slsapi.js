@@ -108,6 +108,12 @@ Notes = (function() {
     });
   };
 
+  Notes.prototype.getByQuery = function(query, callback) {
+    return $.get(this.config.notesURL + "?" + query, function(data) {
+      return callback(data);
+    });
+  };
+
   Notes.prototype["delete"] = function(note_id, callback) {
     return $.ajax({
       url: "" + this.config.notesURL + note_id,
