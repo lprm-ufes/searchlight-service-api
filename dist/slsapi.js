@@ -13,6 +13,7 @@ Config = (function() {
     this.logoutURL = this.opcoes.get('logoutURL', this.serverURL + "/user/logout/");
     this.notesURL = this.opcoes.get('notesURL', this.serverURL + "/note/");
     this.notebookURL = this.opcoes.get('notebookURL', this.serverURL + "/notebook/");
+    this.coletorNotebookId = this.opcoes.get('coletorNotebookId', '');
   }
 
   return Config;

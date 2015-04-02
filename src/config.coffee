@@ -12,6 +12,8 @@ class Config
     @logoutURL = @opcoes.get 'logoutURL', "#{@serverURL}/user/logout/"
     @notesURL = @opcoes.get 'notesURL', "#{@serverURL}/note/"
     @notebookURL = @opcoes.get 'notebookURL', "#{@serverURL}/notebook/"
+    @coletorNotebookId = @opcoes.get 'coletorNotebookId', ''
+
 
 module.exports={'Config':Config }
 
