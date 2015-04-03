@@ -228,9 +228,9 @@ module.exports = {
 
 
 },{}],4:[function(require,module,exports){
-var Config, Notebook, Notes, SLSAPI, User;
+var Config, Notebook, SLSAPI, User, notes;
 
-Notes = require('./notes.coffee').Notes;
+notes = require('./notes.coffee');
 
 Notebook = require('./notebook.coffee').Notebook;
 
@@ -248,7 +248,7 @@ SLSAPI = (function() {
     });
     this.config = new Config(opts);
     this.user = new User(this.config);
-    this.notes = new Notes(this.config);
+    this.notes = new notes.Notes(this.config);
     this.notebook = new Notebook(this.config);
   }
 
@@ -256,7 +256,9 @@ SLSAPI = (function() {
 
 })();
 
-SLSAPI.Notes = Notes;
+SLSAPI.Notes = notes.Notes;
+
+SLSLAP.Note = notes.Note;
 
 if (typeof window !== "undefined") {
   window.SLSAPI = SLSAPI;
