@@ -5,7 +5,24 @@ utils = require('./utils.coffee');
 
 Config = (function() {
   function Config(opcoes) {
+    var self, xhr;
     this.id = md5(JSON.stringify(opcoes));
+    self = this;
+    this.parseOpcoes(opcoes);
+    if (opcoes.urlConfServico) {
+      xhr = $.get(opcoes.urlConfServico);
+      xhr.done(function(opcoes) {
+        self.parseOpcoes(opcoes);
+        return $(document).trigger('slsapi.config:sucesso');
+      });
+      xhr.fail(function() {
+        $(document).trigger('slsapi.config:fail');
+        return alert('Error: não foi possível carregar configuração da visualização');
+      });
+    }
+  }
+
+  Config.prototype.parseOpcoes = function(opcoes) {
     this.opcoes = new utils.Dicionario(opcoes);
     this.serverURL = this.opcoes.get('serverURL', 'http://sl.wancharle.com.br');
     this.createURL = this.opcoes.get('createURL', this.serverURL + "/note/create/");
@@ -13,8 +30,8 @@ Config = (function() {
     this.logoutURL = this.opcoes.get('logoutURL', this.serverURL + "/user/logout/");
     this.notesURL = this.opcoes.get('notesURL', this.serverURL + "/note/");
     this.notebookURL = this.opcoes.get('notebookURL', this.serverURL + "/notebook/");
-    this.coletorNotebookId = this.opcoes.get('coletorNotebookId', '');
-  }
+    return this.coletorNotebookId = this.opcoes.get('id', '');
+  };
 
   return Config;
 
@@ -149,6 +166,9 @@ Notes = (function() {
 
   Notes.prototype.enviar = function(note, notebookId, callback_ok, callback_fail) {
     var ft, options, params;
+    if (notebookId == null) {
+      notebookId = null;
+    }
     if (callback_ok == null) {
       callback_ok = (function() {});
     }
@@ -156,8 +176,12 @@ Notes = (function() {
       callback_fail = (function() {});
     }
     if (!notebookId) {
-      console.error('NotebookId não foi informado!');
-      return;
+      if (!this.config.coletorNotebookId) {
+        console.error('NotebookId não foi informado!');
+        return;
+      } else {
+        notebookId = this.config.coletorNotebookId;
+      }
     }
     params = note;
     params.notebook = notebookId;

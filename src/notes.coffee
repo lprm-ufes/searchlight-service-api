@@ -43,10 +43,14 @@ class Notes
         crossDomain: true,
         success: (data)-> callback(data))
 
-  enviar: (note,notebookId, callback_ok=(()->),callback_fail=(()->)) ->
+  enviar: (note,notebookId=null, callback_ok=(()->),callback_fail=(()->)) ->
     if not notebookId
-      console.error('NotebookId não foi informado!')
-      return
+      if not @config.coletorNotebookId
+        console.error('NotebookId não foi informado!')
+        return
+      else
+        notebookId = @config.coletorNotebookId
+
 
     params = note
     params.notebook = notebookId

@@ -7,8 +7,9 @@
 <script src="../dist/slsapi.js"></script>
 <script>
 
-var api = new SLSAPI({})
+var api = new SLSAPI({urlConfServico:'http://sl.wancharle.com.br/notebook/5514580391f57bdf0d0ba65b'})
 window.nbId = null;
+$(document).on('slsapi.config:sucesso',function(){
 api.notebook.getByName('lprm_teste', function (data){
        nbId=data[0].id
        console.log(nbId)
@@ -17,7 +18,7 @@ api.notebook.getByName('lprm_teste', function (data){
      alert('não existe repositório com este nome')
      }
  )
-
+})
 function check_status_logado(){
     if (api.user.isLogged()){
         $('#usuario').html('Olá '+api.user.getUsuario())
@@ -57,7 +58,7 @@ $(document).ready(function (){
        ob.user= api.user.user_id;
        ob.latitude = 40.0
        ob.longitude = 20.0
-       api.notes.enviar(ob,nbId)
+       api.notes.enviar(ob)
    })
 
    $(document).on('slsapi.user:loginFinish slsapi.user:loginFail slsapi.note:uploadFinish',function(){
