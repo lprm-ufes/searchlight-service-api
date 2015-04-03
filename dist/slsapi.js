@@ -258,7 +258,7 @@ SLSAPI = (function() {
 
 SLSAPI.Notes = notes.Notes;
 
-SLSLAP.Note = notes.Note;
+SLSAPI.Note = notes.Note;
 
 if (typeof window !== "undefined") {
   window.SLSAPI = SLSAPI;
