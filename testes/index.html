@@ -4,13 +4,30 @@
       <meta charset="utf-8">
 <script src="../bower_components/jquery/dist/jquery.min.js"></script>
 <script src="../bower_components/blueimp-md5/js/md5.min.js"></script>
+<script src="../bower_components/tabletop/src/tabletop.js"></script>
 <script src="../dist/slsapi.js"></script>
 <script>
 
 var api = new SLSAPI({urlConfServico:'http://sl.wancharle.com.br/notebook/5514580391f57bdf0d0ba65b'})
 window.nbId = null;
-$(document).on('slsapi.config:sucesso',function(){
-api.notebook.getByName('lprm_teste', function (data){
+SLSAPI.debug=true;
+SLSAPI.on('slsapi.config:sucesso',function(){
+xhr = SLSAPI.ajax.get('http://sl.wancharle.com.br/note/553a69b8a7072f36708c03c7')
+xhr.done(function(data){
+    data['config']['dataSources']=data['config']['fontes']
+api.config.parseOpcoes(data['config'], true)
+dataPool = new SLSAPI.DataPool(api.config)
+dataPool.loadAllData('teste');
+SLSAPI.on('dados:carregados',function (caller,id){
+   if (id == api.config.id){
+        console.log(dataPool.dataSources)
+       }
+ })
+});
+
+
+api.notebook.getByName(
+'lprm_teste', function (data){
        nbId=data[0].id
        console.log(nbId)
  },

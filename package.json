@@ -4,7 +4,9 @@
   "description": "Api para utilização dos recursos do searchlight-service",
   "main": "dist/slsapi.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "browserify": "browserify -t coffeeify ./src/slsapi.coffee > ./dist/slsapi.js",
+    "browserify:debug": "browserify -d -t coffeeify ./src/slsapi.coffee > ./dist/slsapi.js"
   },
   "repository": {
     "type": "git",
@@ -19,9 +21,15 @@
   "license": "ISC",
   "devDependencies": {
     "bower": "^1.3.12",
-    "coffeeify": "^1.0.0",
+    "browserify": "^9.0.8",
+    "coffeeify": "^1.1.0",
     "grunt": "^0.4.5",
     "grunt-browserify": "^3.5.0",
     "grunt-cli": "^0.1.13"
+  },
+  "dependencies": {
+    "blueimp-md5": "^1.1.0",
+    "request-promise": "^0.4.2",
+    "tough-cookie": "^0.13.0"
   }
 }

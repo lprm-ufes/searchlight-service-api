@@ -1,3 +1,4 @@
+ajax = require './ajax.coffee'
 
 class Notebook
   @instances = {} 
@@ -11,14 +12,16 @@ class Notebook
 
   getByName: (notebookName,callback,callbackFail=null)->
     url = "#{@config.notebookURL}?name=#{notebookName}"
-    $.get url,(data)->
-      console.log('ola')
+    xhr = ajax.get url
+    xhr.done (data)->
       callback(data)
 
 
   getById: (notebookId,callback,callbackFail=null)->
     url = "#{@config.notebookURL}?id=#{notebookId}"
-    $.get url, callback, callbackFail
+    xhr = ajax.get url
+    xhr.done(callback)
+    xhr.fail(callbackFail)
 
 module.exports = {'Notebook': Notebook} 
 

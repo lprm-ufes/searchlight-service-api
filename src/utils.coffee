@@ -1,3 +1,11 @@
+if typeof window != "undefined"
+  CLIENT_SIDE = true
+  md5 = window.md5 
+else
+  md5 = require('blueimp-md5').md5
+  CLIENT_SIDE = false
+ 
+
 class Dicionario
   constructor: (js_hash)->
     @keys=Object.keys(js_hash)
@@ -9,6 +17,58 @@ class Dicionario
     else
       return value
 
-module.exports = {Dicionario:Dicionario}
+getURLParameter= (name) ->
+  $(document).getUrlParam(name)
+
+
+string2function = (func_code) ->
+  #converte uma string para funcao          code = fonte.func_code
+  re = /.*function *(\w*) *\( *(\w*) *\) *\{/mg;
+  if ((m = re.exec(func_code)) != null) 
+    if (m.index == re.lastIndex) 
+      re.lastIndex++
+    
+    nome = m[1] 
+    return eval("window['#{nome}']=#{func_code}")
+  else
+    return null
+
+# parseFloatPTBR :: String -> Float
+#
+# Converte uma string de um numero float no formato internacional e brasileiro num numero Float
+# 
+# Exemplos:
+# > parseFloatPTBR(20.1)
+# 20.1
+# > parseFloatPTBR("20.1")
+# 20.1
+# > parseFloatPTBR("20,1")
+# 20.1
+# > parseFloatPTBR("-20.1")
+# -20.1
+# > parseFloatPTBR("-20,1")
+# -20.1
+parseFloatPTBR = (str) ->
+  itens = String(str).match(/^(-*\d+)([\,\.]*)(\d+)?$/)
+  if itens[2]
+    return parseFloat(itens[1]+"."+itens[3])
+  else
+    return parseFloat(itens[1])
+
+
+# exportando funções para acesso externo
+if CLIENT_SIDE
+  window.parseFloatPTBR = parseFloatPTBR
+  window.string2function = string2function
+  window.getURLParameter = getURLParameter
+
+
+module.exports = { 
+    Dicionario: Dicionario
+    parseFloatPTBR: parseFloatPTBR
+    string2function: string2function
+    getURLParameter: getURLParameter
+    md5: md5
+  }
 # vim: set ts=2 sw=2 sts=2 expandtab:
 
