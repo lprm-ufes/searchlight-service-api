@@ -5,7 +5,7 @@ else
   TABLETOP = Tabletop
   CLIENT_SIDE = true
 
-DataSource = require('./datasource.coffee').DataSource
+DataSource = require('./datasource').DataSource
 
 class DataSourceGoogle extends DataSource
 

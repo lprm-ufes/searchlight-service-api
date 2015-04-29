@@ -1,10 +1,10 @@
-events = require('./events.coffee')
-ajax = require('./ajax.coffee')
-notes = require('./notes.coffee')
-Notebook = require('./notebook.coffee').Notebook
-User  = require('./user.coffee').User
-Config  = require('./config.coffee').Config
-dataPool = require('./datapool.coffee')
+events = require('./events')
+ajax = require('./ajax')
+notes = require('./notes')
+Notebook = require('./notebook').Notebook
+User  = require('./user').User
+Config  = require('./config').Config
+dataPool = require('./datapool')
 
 class SLSAPI
   

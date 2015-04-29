@@ -1,6 +1,6 @@
-events = require './events.coffee'
-utils = require './utils.coffee'
-ajax = require './ajax.coffee'
+events = require './events'
+utils = require './utils'
+ajax = require './ajax'
    
 
 class Config

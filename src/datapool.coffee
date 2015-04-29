@@ -1,6 +1,6 @@
-events = require './events.coffee'
-DataSource  = require('./datasource.coffee').DataSource
-DataSourceGoogle  = require('./datasourceGoogle.coffee').DataSourceGoogle
+events = require './events'
+DataSource  = require('./datasource').DataSource
+DataSourceGoogle  = require('./datasourceGoogle').DataSourceGoogle
 
 createDataSource = (url,functionCode)->
   if url.indexOf("docs.google.com/spreadsheet") > -1
@@ -44,8 +44,7 @@ class DataPool
     return @dataSources
 
   updateFonte: (url,func_code, index) ->
-    @dataSources[index].url = url
-    @dataSources[index].func_code = func_code
+    @dataSources[index] = createDataSource(url,func_code)
 
   getDataSource: (i) ->
     return @dataSources[i]

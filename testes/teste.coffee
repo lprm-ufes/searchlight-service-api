@@ -1,5 +1,5 @@
 
-SLSAPI = require('../src/slsapi.coffee')
+SLSAPI = require('../lib/slsapi')
 
 console.log('Teste DataSourceGoogle: ')
 api = new SLSAPI( {

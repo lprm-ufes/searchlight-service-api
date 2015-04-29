@@ -1,6 +1,6 @@
-events = require './events.coffee'
-ajax = require './ajax.coffee'
-utils = require './utils.coffee'
+events = require './events'
+ajax = require './ajax'
+utils = require './utils'
 
 class DataSource
 

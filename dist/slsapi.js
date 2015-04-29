@@ -227,11 +227,11 @@ module.exports = {
 },{"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"request-promise":undefined}],3:[function(require,module,exports){
 var Config, ajax, events, utils;
 
-events = require('./events.coffee');
+events = require('./events');
 
-utils = require('./utils.coffee');
+utils = require('./utils');
 
-ajax = require('./ajax.coffee');
+ajax = require('./ajax');
 
 Config = (function() {
   function Config(opcoes) {
@@ -279,15 +279,15 @@ module.exports = {
 
 
 
-},{"./ajax.coffee":2,"./events.coffee":7,"./utils.coffee":12}],4:[function(require,module,exports){
+},{"./ajax":2,"./events":7,"./utils":12}],4:[function(require,module,exports){
 var DataPool, DataSource, DataSourceGoogle, createDataSource, events,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-events = require('./events.coffee');
+events = require('./events');
 
-DataSource = require('./datasource.coffee').DataSource;
+DataSource = require('./datasource').DataSource;
 
-DataSourceGoogle = require('./datasourceGoogle.coffee').DataSourceGoogle;
+DataSourceGoogle = require('./datasourceGoogle').DataSourceGoogle;
 
 createDataSource = function(url, functionCode) {
   if (url.indexOf("docs.google.com/spreadsheet") > -1) {
@@ -341,8 +341,7 @@ DataPool = (function() {
   };
 
   DataPool.prototype.updateFonte = function(url, func_code, index) {
-    this.dataSources[index].url = url;
-    return this.dataSources[index].func_code = func_code;
+    return this.dataSources[index] = createDataSource(url, func_code);
   };
 
   DataPool.prototype.getDataSource = function(i) {
@@ -392,15 +391,15 @@ module.exports = {
 
 
 
-},{"./datasource.coffee":5,"./datasourceGoogle.coffee":6,"./events.coffee":7}],5:[function(require,module,exports){
+},{"./datasource":5,"./datasourceGoogle":6,"./events":7}],5:[function(require,module,exports){
 var DataSource, ajax, events, utils,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-events = require('./events.coffee');
+events = require('./events');
 
-ajax = require('./ajax.coffee');
+ajax = require('./ajax');
 
-utils = require('./utils.coffee');
+utils = require('./utils');
 
 DataSource = (function() {
   function DataSource(url, func_code) {
@@ -583,7 +582,7 @@ module.exports = {
 
 
 
-},{"./ajax.coffee":2,"./events.coffee":7,"./utils.coffee":12}],6:[function(require,module,exports){
+},{"./ajax":2,"./events":7,"./utils":12}],6:[function(require,module,exports){
 (function (process){
 var CLIENT_SIDE, DataSource, DataSourceGoogle, TABLETOP,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -597,7 +596,7 @@ if (typeof process.browser === 'undefined') {
   CLIENT_SIDE = true;
 }
 
-DataSource = require('./datasource.coffee').DataSource;
+DataSource = require('./datasource').DataSource;
 
 DataSourceGoogle = (function(superClass) {
   extend(DataSourceGoogle, superClass);
@@ -629,7 +628,7 @@ module.exports = {
 
 
 }).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"./datasource.coffee":5,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"tabletop":undefined}],7:[function(require,module,exports){
+},{"./datasource":5,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"tabletop":undefined}],7:[function(require,module,exports){
 (function (process){
 var CLIENT_SIDE, bind, emitter, events, trigger;
 
@@ -672,7 +671,7 @@ module.exports = {
 },{"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"events":undefined}],8:[function(require,module,exports){
 var Notebook, ajax;
 
-ajax = require('./ajax.coffee');
+ajax = require('./ajax');
 
 Notebook = (function() {
   Notebook.instances = {};
@@ -719,10 +718,10 @@ module.exports = {
 
 
 
-},{"./ajax.coffee":2}],9:[function(require,module,exports){
+},{"./ajax":2}],9:[function(require,module,exports){
 var Notes, ajax;
 
-ajax = require('./ajax.coffee');
+ajax = require('./ajax');
 
 Notes = (function() {
   Notes.instances = {};
@@ -841,23 +840,23 @@ module.exports = {
 
 
 
-},{"./ajax.coffee":2}],10:[function(require,module,exports){
+},{"./ajax":2}],10:[function(require,module,exports){
 (function (process){
 var Config, Notebook, SLSAPI, User, ajax, dataPool, events, notes;
 
-events = require('./events.coffee');
+events = require('./events');
 
-ajax = require('./ajax.coffee');
+ajax = require('./ajax');
 
-notes = require('./notes.coffee');
+notes = require('./notes');
 
-Notebook = require('./notebook.coffee').Notebook;
+Notebook = require('./notebook').Notebook;
 
-User = require('./user.coffee').User;
+User = require('./user').User;
 
-Config = require('./config.coffee').Config;
+Config = require('./config').Config;
 
-dataPool = require('./datapool.coffee');
+dataPool = require('./datapool');
 
 SLSAPI = (function() {
   function SLSAPI(opts) {
@@ -890,7 +889,7 @@ module.exports = SLSAPI;
 
 
 }).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"./ajax.coffee":2,"./config.coffee":3,"./datapool.coffee":4,"./events.coffee":7,"./notebook.coffee":8,"./notes.coffee":9,"./user.coffee":11,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1}],11:[function(require,module,exports){
+},{"./ajax":2,"./config":3,"./datapool":4,"./events":7,"./notebook":8,"./notes":9,"./user":11,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1}],11:[function(require,module,exports){
 (function (process){
 var CLIENT_SIDE, LocalStorage, User, localStorage, md5,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };

@@ -1,4 +1,4 @@
-ajax = require './ajax.coffee'
+ajax = require './ajax'
 
 class Notes
   @instances = {} 

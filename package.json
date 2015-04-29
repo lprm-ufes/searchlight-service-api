@@ -1,13 +1,13 @@
 {
   "name": "searchlight-service-api",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Api para utilização dos recursos do searchlight-service",
-  "main": "dist/slsapi.js",
+  "main": "lib/slsapi.js",
   "scripts": {
-    "test": "npm run browserify && npm run nodetest && exit 1",
-    "nodetest": "coffee ./testes/teste.coffee -n",
-    "browserify": "browserify --no-bundle-external -t coffeeify ./src/slsapi.coffee > ./dist/slsapi.js",
-    "browserify:debug": "browserify -d -t coffeeify ./src/slsapi.coffee > ./dist/slsapi.js"
+    "test": "coffee ./testes/teste.coffee -n",
+    "compile": "coffee --output lib --compile src && npm run browserify", 
+    "browserify": "browserify --extension='.coffee' --no-bundle-external -t coffeeify ./src/slsapi.coffee > ./dist/slsapi.js",
+    "browserify:debug": "browserify  --extension='.coffee' -d -t coffeeify ./src/slsapi.coffee > ./dist/slsapi.js"
   },
   "repository": {
     "type": "git",
