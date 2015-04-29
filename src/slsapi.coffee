@@ -1,20 +1,12 @@
-
-if typeof window != "undefined"
-  CLIENT_SIDE = true
-else
-  CLIENT_SIDE = false
-
+events = require('./events.coffee')
 ajax = require('./ajax.coffee')
 notes = require('./notes.coffee')
 Notebook = require('./notebook.coffee').Notebook
 User  = require('./user.coffee').User
 Config  = require('./config.coffee').Config
-DataSource  = require('./datasource.coffee').DataSource
-DataPool = require('./datapool.coffee').DataPool
-
+dataPool = require('./datapool.coffee')
 
 class SLSAPI
-  @emitter: null
   
   constructor: (opts) ->
     @config = new Config(opts)
@@ -22,29 +14,16 @@ class SLSAPI
     @notes = new notes.Notes(@config)
     @notebook = new Notebook(@config)
   
-  @trigger:(event, param)->
-    if CLIENT_SIDE
-      $(document).trigger(event,param)
-    else
-      SLSAPI.emitter.emit(event,param)
+   
+SLSAPI.trigger = events.trigger
+SLSAPI.on = events.on
 
-  @on: (event,cb) ->
-    if CLIENT_SIDE
-      $(document).on(event,cb)
-    else
-      SLSAPI.emitter.on(event,cb)
-    
-    
 SLSAPI.Notes = notes.Notes
-SLSAPI.DataSource = DataSource
-SLSAPI.DataPool = DataPool
+SLSAPI.dataPool = dataPool
 SLSAPI.ajax = ajax
 
-if CLIENT_SIDE
+if typeof process.browser!= 'undefined'
   window.SLSAPI = SLSAPI
-else
-  events = require('events')
-  SLSAPI.emitter = new events.EventEmitter()
 
 module.exports = SLSAPI
 

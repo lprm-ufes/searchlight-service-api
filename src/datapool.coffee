@@ -1,4 +1,13 @@
+events = require './events.coffee'
 DataSource  = require('./datasource.coffee').DataSource
+DataSourceGoogle  = require('./datasourceGoogle.coffee').DataSourceGoogle
+
+createDataSource = (url,functionCode)->
+  if url.indexOf("docs.google.com/spreadsheet") > -1
+    return new DataSourceGoogle(url,functionCode)
+  else
+    return new DataSource(url,functionCode)
+
 
 class DataPool
   @instances = {}
@@ -18,13 +27,13 @@ class DataPool
       @addDataSource(s)
 
     # bind counter function to count DataSources loaded
-    SLSAPI.on('slsapi:datasource:load',(caller,id)=>
+    events.on('slsapi:datasource:load',(id)=>
       if id == config.id
         @onDataSourceLoaded()
     )
 
   addDataSource: (s)->
-    source = new DataSource(s.url,s.func_code)
+    source = createDataSource(s.url,s.func_code)
     if source.isValid()
       @dataSources.push(source)
 
@@ -42,12 +51,12 @@ class DataPool
     return @dataSources[i]
 
   # load all data from datasources
-  loadAllData: (caller) =>
+  loadAllData: (callerId) =>
     obj = this
     @sourcesLoaded = 0
-    SLSAPI.trigger("dados:carregando",caller)
+    events.trigger("dados:carregando",callerId)
     for source, i in @dataSources
-      source.loadData(false,@config)
+      source.loadData(@config,false)
 
   # retorna json que será salvo na configuração deste datapool
   toJSON:() ->
@@ -60,7 +69,7 @@ class DataPool
   onDataSourceLoaded: ()->
     @sourcesLoaded +=1
     if @sourcesLoaded == @dataSources.length
-      SLSAPI.trigger('dados:carregados',@config.id)
+      events.trigger('dados:carregados',@config.id)
 
 
 module.exports = {DataPool:DataPool}

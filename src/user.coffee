@@ -1,3 +1,14 @@
+if typeof process.browser == 'undefined' 
+  md5 = require('blueimp-md5').md5
+  LocalStorage = require('node-localstorage').LocalStorage
+  localStorage = new LocalStorage('./scratch')
+  CLIENT_SIDE = false
+else
+  CLIENT_SIDE = true
+  localStorage = window.localStorage
+  md5 = window.md5 
+
+
 class User
   @instances = {} 
 
@@ -6,7 +17,7 @@ class User
 
   constructor: (@config)->
     User.instances[@config.id] = @
-    @storage = window.localStorage
+    @storage = localStorage
     @usuario = this.getUsuario()
 
   isLogged: ()->

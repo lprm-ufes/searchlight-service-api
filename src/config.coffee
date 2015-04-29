@@ -1,3 +1,4 @@
+events = require './events.coffee'
 utils = require './utils.coffee'
 ajax = require './ajax.coffee'
    
@@ -13,9 +14,9 @@ class Config
       xhr = ajax.get opcoes.urlConfServico
       xhr.done (opcoes) ->
         self.parseOpcoes(opcoes)
-        SLSAPI.trigger('slsapi.config:sucesso',@id)
+        events.trigger('slsapi.config:sucesso',self.id)
       xhr.fail ()->
-        SLSAPI.trigger('slsapi.config:fail',{caller:@id,error:'Error: não foi possível carregar configuração da visualização'})
+        events.trigger('slsapi.config:fail',{id:self.id,error:'Error: não foi possível carregar configuração da visualização'})
         console.log('Error: não foi possível carregar configuração da visualização')
 
 

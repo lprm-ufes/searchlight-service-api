@@ -1,9 +1,10 @@
-if typeof window != "undefined"
-  CLIENT_SIDE = true
-else
+if typeof process.browser == 'undefined' 
   requestPromise = require('request-promise')
   requestPromise.defaults({jar: true})
   CLIENT_SIDE = false
+else
+  CLIENT_SIDE = true
+  
 
 class Ajax
   constructor: ()->

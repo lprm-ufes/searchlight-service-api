@@ -1,13 +1,15 @@
-if typeof window != "undefined"
-  CLIENT_SIDE = true
-  md5 = window.md5 
-else
+if typeof process.browser == 'undefined' 
   md5 = require('blueimp-md5').md5
   CLIENT_SIDE = false
- 
+else
+  CLIENT_SIDE = true
+  md5 = window.md5 
 
+ 
 class Dicionario
   constructor: (js_hash)->
+    if typeof js_hash == 'string'
+      js_hash = JSON.parse(js_hash)
     @keys=Object.keys(js_hash)
     @data = js_hash
 
@@ -23,13 +25,16 @@ getURLParameter= (name) ->
 
 string2function = (func_code) ->
   #converte uma string para funcao          code = fonte.func_code
-  re = /.*function *(\w*) *\( *(\w*) *\) *\{/mg;
-  if ((m = re.exec(func_code)) != null) 
-    if (m.index == re.lastIndex) 
+  re = /.*function *(\w*) *\( *(\w*) *\) *\{/mg
+  if ((m = re.exec(func_code)) != null)
+    if (m.index == re.lastIndex)
       re.lastIndex++
-    
-    nome = m[1] 
-    return eval("window['#{nome}']=#{func_code}")
+    nome = m[1] or 'slsAnonymousFunction'
+    if CLIENT_SIDE
+      return eval("window['#{nome}']=#{func_code}")
+    else
+      # FIXME: memoria cresce pois funcoes ficam registradas no export (arranjar um jeito de associar apenas para aquele request)
+      return eval("exports['#{nome}']=#{func_code}")
   else
     return null
 

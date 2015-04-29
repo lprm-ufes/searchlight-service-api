@@ -1,4 +1,6 @@
-ajax = require('./ajax.coffee')
+events = require './events.coffee'
+ajax = require './ajax.coffee'
+utils = require './utils.coffee'
 
 class DataSource
 
@@ -11,7 +13,7 @@ class DataSource
     else
       if typeof func_code is 'string'
         try
-          @func_code = string2function(func_code)
+          @func_code = utils.string2function(func_code)
           @url = url
         catch e
           console.error e,'Error ao tentar criar funcao de conversao apartir de texto'
@@ -51,7 +53,7 @@ class DataSource
     if geoItem
       # se o objeto nao tiver id um hash_id eh gerado.
       if not geoItem.id
-       geoItem.hashid = "#{parseFloat(geoItem.latitude).toFixed(7)}#{parseFloat(geoItem.longitude).toFixed(7)}#{md5(JSON.stringify(geoItem))}" 
+       geoItem.hashid = "#{parseFloat(geoItem.latitude).toFixed(7)}#{parseFloat(geoItem.longitude).toFixed(7)}#{utils.md5(JSON.stringify(geoItem))}" 
       else 
        if not geoItem.hashid
          geoItem.hashid = geoItem.id
@@ -71,7 +73,7 @@ class DataSource
     @notesChildren[parentId].push(child)
 
   # load data to dataSource from the datasource.url
-  loadData: (force=false,config) ->
+  loadData: (config,force=false) ->
     if config.usarCache and config.noteid
       @loadFromCache(config)
       return
@@ -93,13 +95,13 @@ class DataSource
 
   # callback function called on data loaded
   onDataLoaded: (data,fonte,config)->
-    SLSAPI.trigger('slsapi:datasource:load',config.id)
     try
       for d, i in data
         @addItem(d,fonte.func_code)
+      events.trigger('slsapi:datasource:load',config.id)
     catch e
       console.error(e.toString())
-      SLSAPI.trigger('slsapi:datasource:loadFail',config.id)
+      events.trigger('slsapi:datasource:loadFail',config.id)
       return
 
   loadFromCache: (config)->
