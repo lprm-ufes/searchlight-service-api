@@ -8,8 +8,10 @@ else
   
 
 class Ajax
+
   constructor: ()->
     @xhr = null
+    @parseJson = true
     if CLIENT_SIDE
       $.ajaxSetup({
         crossDomain: true,
@@ -27,9 +29,15 @@ class Ajax
 
   post: (params)->
     if CLIENT_SIDE
-      @xhr = $.post params
+      if "data" of params
+        @xhr = $.post params['url'], params['data']
+      else
+        @xhr = $.post params
     else
-      @xhr = requestPromise.post params
+      if "data" of params
+        @xhr = requestPromise.post {url:params['url'], formData:params['data']}
+      else
+        @xhr = requestPromise.post params
     return @
 
   delete: (params)->
@@ -42,14 +50,28 @@ class Ajax
     return @
 
   done: (cb)->
+    self = @
     if CLIENT_SIDE
       @xhr.done(cb)
     else
-      @xhr.then(cb)
+      cb2 = (data) -> 
+        if self.parseJson
+            data = JSON.parse(data)
+        cb(data)
+      @xhr.then(cb2,()->) # XXX: passando funcao anonima para evitar levantamento de exceções no .catch devido as promessas
 
   fail: (cb)->
     if CLIENT_SIDE
-      @xhr.fail(cb)
+      cb2 = (jq)->
+        body = jq.responseJSON or jq.responseText
+        statusCode = jq.status
+        reason = {
+          response:
+            body: body
+            statusCode :statusCode
+        }
+        cb(reason)
+      @xhr.fail(cb2)
     else
       @xhr.catch(cb)
       

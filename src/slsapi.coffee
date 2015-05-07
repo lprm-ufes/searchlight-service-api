@@ -28,6 +28,7 @@ class SLSAPI
    
 SLSAPI.Config = Config
 SLSAPI.Notes = notes.Notes
+SLSAPI.User = User
 SLSAPI.dataPool = dataPool
 SLSAPI.ajax = ajax
 

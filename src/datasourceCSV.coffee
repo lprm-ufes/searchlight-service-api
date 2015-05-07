@@ -9,6 +9,7 @@ if typeof process.browser == 'undefined'
   class DataSourceCSV extends DataSource
     loadData: (config)->
       xhr= ajax.get(@url)
+      xhr.parseJson = false
       xhr.done( (body) =>
         parsed = csvParse.parse(body,{header:true})
         json = parsed.data

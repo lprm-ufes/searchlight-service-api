@@ -108,6 +108,7 @@ if (typeof process.browser === 'undefined') {
 Ajax = (function() {
   function Ajax() {
     this.xhr = null;
+    this.parseJson = true;
     if (CLIENT_SIDE) {
       $.ajaxSetup({
         crossDomain: true,
@@ -129,9 +130,20 @@ Ajax = (function() {
 
   Ajax.prototype.post = function(params) {
     if (CLIENT_SIDE) {
-      this.xhr = $.post(params);
+      if ("data" in params) {
+        this.xhr = $.post(params['url'], params['data']);
+      } else {
+        this.xhr = $.post(params);
+      }
     } else {
-      this.xhr = requestPromise.post(params);
+      if ("data" in params) {
+        this.xhr = requestPromise.post({
+          url: params['url'],
+          formData: params['data']
+        });
+      } else {
+        this.xhr = requestPromise.post(params);
+      }
     }
     return this;
   };
@@ -148,16 +160,37 @@ Ajax = (function() {
   };
 
   Ajax.prototype.done = function(cb) {
+    var cb2, self;
+    self = this;
     if (CLIENT_SIDE) {
       return this.xhr.done(cb);
     } else {
-      return this.xhr.then(cb);
+      cb2 = function(data) {
+        if (self.parseJson) {
+          data = JSON.parse(data);
+        }
+        return cb(data);
+      };
+      return this.xhr.then(cb2, function() {});
     }
   };
 
   Ajax.prototype.fail = function(cb) {
+    var cb2;
     if (CLIENT_SIDE) {
-      return this.xhr.fail(cb);
+      cb2 = function(jq) {
+        var body, reason, statusCode;
+        body = jq.responseJSON || jq.responseText;
+        statusCode = jq.status;
+        reason = {
+          response: {
+            body: body,
+            statusCode: statusCode
+          }
+        };
+        return cb(reason);
+      };
+      return this.xhr.fail(cb2);
     } else {
       return this.xhr["catch"](cb);
     }
@@ -619,6 +652,7 @@ if (typeof process.browser === 'undefined') {
     DataSourceCSV.prototype.loadData = function(config) {
       var xhr;
       xhr = ajax.get(this.url);
+      xhr.parseJson = false;
       xhr.done((function(_this) {
         return function(body) {
           var json, parsed;
@@ -801,9 +835,8 @@ Notebook = (function() {
     }
     url = this.config.notebookURL + "?name=" + notebookName;
     xhr = ajax.get(url);
-    return xhr.done(function(data) {
-      return callback(data);
-    });
+    xhr.done(callback);
+    return xhr.fail(callbackFail);
   };
 
   Notebook.prototype.getById = function(notebookId, callback, callbackFail) {
@@ -1001,6 +1034,8 @@ SLSAPI.Config = Config;
 
 SLSAPI.Notes = notes.Notes;
 
+SLSAPI.User = User;
+
 SLSAPI.dataPool = dataPool;
 
 SLSAPI.ajax = ajax;
@@ -1016,7 +1051,7 @@ module.exports = SLSAPI;
 }).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
 },{"./ajax":2,"./config":3,"./datapool":4,"./events":8,"./notebook":9,"./notes":10,"./user":12,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1}],12:[function(require,module,exports){
 (function (process){
-var CLIENT_SIDE, LocalStorage, User, events, localStorage, md5,
+var CLIENT_SIDE, LocalStorage, User, ajax, events, localStorage, md5,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 if (typeof process.browser === 'undefined') {
@@ -1032,7 +1067,17 @@ if (typeof process.browser === 'undefined') {
 
 events = require('./events');
 
+ajax = require('./ajax');
+
 User = (function() {
+  User.EVENT_LOGIN_SUCCESS = 'userLoginSuccess.slsapi';
+
+  User.EVENT_LOGIN_START = 'userLoginStart.slsapi';
+
+  User.EVENT_LOGIN_FINISH = 'userLoginFinish.slsapi';
+
+  User.EVENT_LOGIN_FAIL = 'userLoginFail.slsapi';
+
   User.instances = {};
 
   User.getInstance = function(config) {
@@ -1084,26 +1129,32 @@ User = (function() {
   };
 
   User.prototype.login = function(u, p) {
-    var url;
+    var url, xhr;
     if (u && p) {
       url = this.config.loginURL;
-      events.trigger(this.config.id, 'slsapi.user:loginStart');
-      $.post(url, {
-        username: u,
-        password: p
-      }, (function(_this) {
+      events.trigger(this.config.id, User.EVENT_LOGIN_START);
+      xhr = ajax.post({
+        url: url,
+        dataType: 'json',
+        data: {
+          username: u,
+          password: p
+        }
+      });
+      xhr.done((function(_this) {
         return function(json) {
           if (json.error) {
             alert(json.error);
           } else {
             _this.setUsuario(u, json);
-            events.trigger(_this.config.id, 'slsapi.user:loginSuccess');
+            events.trigger(_this.config.id, User.EVENT_LOGIN_SUCCESS, json);
           }
-          return events.trigger(_this.config.id, 'slsapi.user:loginFinish');
+          return events.trigger(_this.config.id, User.EVENT_LOGIN_FINISH, json);
         };
-      })(this), "json").fail((function(_this) {
-        return function() {
-          return events.trigger(_this.config.id, 'slsapi.user:loginFail');
+      })(this));
+      xhr.fail((function(_this) {
+        return function(reason) {
+          return events.trigger(_this.config.id, User.EVENT_LOGIN_FAIL, reason);
         };
       })(this));
     }
@@ -1121,7 +1172,7 @@ module.exports = {
 
 
 }).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"./events":8,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"blueimp-md5":undefined,"node-localstorage":undefined}],13:[function(require,module,exports){
+},{"./ajax":2,"./events":8,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"blueimp-md5":undefined,"node-localstorage":undefined}],13:[function(require,module,exports){
 (function (process){
 var CLIENT_SIDE, Dicionario, dms2decPTBR, getURLParameter, md5, parseFloatPTBR, string2function,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },

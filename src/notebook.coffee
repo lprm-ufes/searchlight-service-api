@@ -13,8 +13,8 @@ class Notebook
   getByName: (notebookName,callback,callbackFail=null)->
     url = "#{@config.notebookURL}?name=#{notebookName}"
     xhr = ajax.get url
-    xhr.done (data)->
-      callback(data)
+    xhr.done(callback)
+    xhr.fail(callbackFail)
 
 
   getById: (notebookId,callback,callbackFail=null)->

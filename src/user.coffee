@@ -9,8 +9,14 @@ else
   md5 = window.md5 
 
 events = require './events'
+ajax = require './ajax'
 
 class User
+  @EVENT_LOGIN_SUCCESS = 'userLoginSuccess.slsapi'
+  @EVENT_LOGIN_START = 'userLoginStart.slsapi'
+  @EVENT_LOGIN_FINISH = 'userLoginFinish.slsapi'
+  @EVENT_LOGIN_FAIL = 'userLoginFail.slsapi'
+
   @instances = {} 
 
   @getInstance: (config) ->
@@ -57,19 +63,26 @@ class User
     #disable the button so we can't resubmit while we wait
     if (u and  p)
       url = @config.loginURL
-      events.trigger(@config.id,'slsapi.user:loginStart')
-      $.post(url, {username:u,password:p}, (json) =>
+      events.trigger(@config.id,User.EVENT_LOGIN_START)
+      xhr= ajax.post {
+          url:url
+          dataType:'json'
+          data:
+            username:u
+            password:p
+      }
+      xhr.done (json) =>
         if json.error
           alert(json.error)
         else
           @setUsuario u, json
           #dispara mensagem de login com sucesso
-          events.trigger(@config.id,'slsapi.user:loginSuccess')
+          events.trigger(@config.id,User.EVENT_LOGIN_SUCCESS,json)
 
-        events.trigger(@config.id,'slsapi.user:loginFinish')
-      ,"json").fail(() =>
-        events.trigger(@config.id,'slsapi.user:loginFail')
-        )
+        events.trigger(@config.id,User.EVENT_LOGIN_FINISH,json)
+      xhr.fail (reason) =>
+        events.trigger(@config.id,User.EVENT_LOGIN_FAIL,reason)
+        
     return false
    
 
