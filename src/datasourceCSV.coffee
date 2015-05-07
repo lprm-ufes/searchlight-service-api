@@ -1,28 +1,13 @@
-if typeof process.browser == 'undefined'
-  CLIENT_SIDE = false
-  csvParse = require('babyparse')
-else
-  csvParse = Papa
-  CLIENT_SIDE = true
-
 DataSource = require('./datasource').DataSource
 ajax = require './ajax'
 
-class DataSourceCSV extends DataSource
 
-  loadData: (config)->
-    if CLIENT_SIDE
-      csvParse.parse(@url, {
-        header:true,
-        download: true,
-        error: ()=> alert("Erro ao baixar arquivo csv da fonte de dados:\n#{@url}"),
-        complete: (results, file) =>
+if typeof process.browser == 'undefined'
+  # Serverside definitions
+  csvParse = require('babyparse')
 
-          console.log('teste')
-          @onDataLoaded(results['data'],@,config)
-        }
-      )
-    else
+  class DataSourceCSV extends DataSource
+    loadData: (config)->
       xhr= ajax.get(@url)
       xhr.done( (body) =>
         parsed = csvParse.parse(body,{header:true})
@@ -31,6 +16,20 @@ class DataSourceCSV extends DataSource
       )
       xhr.fail((error)->
         console.log('error ao baixar CSV',error)
+      )
+else
+  # Clientside definitions
+  csvParse = Papa
+
+  class DataSourceCSV extends DataSource
+    loadData: (config)->
+      csvParse.parse(@url, {
+        header:true,
+        download: true,
+        error: ()=> alert("Erro ao baixar arquivo csv da fonte de dados:\n#{@url}"),
+        complete: (results, file) =>
+          @onDataLoaded(results['data'],@,config)
+        }
       )
 
    

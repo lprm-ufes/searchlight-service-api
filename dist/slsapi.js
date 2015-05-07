@@ -599,48 +599,25 @@ module.exports = {
 
 },{"./ajax":2,"./events":8,"./utils":13}],6:[function(require,module,exports){
 (function (process){
-var CLIENT_SIDE, DataSource, DataSourceCSV, ajax, csvParse,
+var DataSource, DataSourceCSV, ajax, csvParse,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
-
-if (typeof process.browser === 'undefined') {
-  CLIENT_SIDE = false;
-  csvParse = require('babyparse');
-} else {
-  csvParse = Papa;
-  CLIENT_SIDE = true;
-}
 
 DataSource = require('./datasource').DataSource;
 
 ajax = require('./ajax');
 
-DataSourceCSV = (function(superClass) {
-  extend(DataSourceCSV, superClass);
+if (typeof process.browser === 'undefined') {
+  csvParse = require('babyparse');
+  DataSourceCSV = (function(superClass) {
+    extend(DataSourceCSV, superClass);
 
-  function DataSourceCSV() {
-    return DataSourceCSV.__super__.constructor.apply(this, arguments);
-  }
+    function DataSourceCSV() {
+      return DataSourceCSV.__super__.constructor.apply(this, arguments);
+    }
 
-  DataSourceCSV.prototype.loadData = function(config) {
-    var xhr;
-    if (CLIENT_SIDE) {
-      return csvParse.parse(this.url, {
-        header: true,
-        download: true,
-        error: (function(_this) {
-          return function() {
-            return alert("Erro ao baixar arquivo csv da fonte de dados:\n" + _this.url);
-          };
-        })(this),
-        complete: (function(_this) {
-          return function(results, file) {
-            console.log('teste');
-            return _this.onDataLoaded(results['data'], _this, config);
-          };
-        })(this)
-      });
-    } else {
+    DataSourceCSV.prototype.loadData = function(config) {
+      var xhr;
       xhr = ajax.get(this.url);
       xhr.done((function(_this) {
         return function(body) {
@@ -655,12 +632,41 @@ DataSourceCSV = (function(superClass) {
       return xhr.fail(function(error) {
         return console.log('error ao baixar CSV', error);
       });
+    };
+
+    return DataSourceCSV;
+
+  })(DataSource);
+} else {
+  csvParse = Papa;
+  DataSourceCSV = (function(superClass) {
+    extend(DataSourceCSV, superClass);
+
+    function DataSourceCSV() {
+      return DataSourceCSV.__super__.constructor.apply(this, arguments);
     }
-  };
 
-  return DataSourceCSV;
+    DataSourceCSV.prototype.loadData = function(config) {
+      return csvParse.parse(this.url, {
+        header: true,
+        download: true,
+        error: (function(_this) {
+          return function() {
+            return alert("Erro ao baixar arquivo csv da fonte de dados:\n" + _this.url);
+          };
+        })(this),
+        complete: (function(_this) {
+          return function(results, file) {
+            return _this.onDataLoaded(results['data'], _this, config);
+          };
+        })(this)
+      });
+    };
 
-})(DataSource);
+    return DataSourceCSV;
+
+  })(DataSource);
+}
 
 module.exports = {
   DataSourceCSV: DataSourceCSV
