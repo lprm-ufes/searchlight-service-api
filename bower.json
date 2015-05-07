@@ -26,6 +26,7 @@
   "dependencies": {
     "blueimp-md5": "~1.1.0",
     "tabletop": "~1.4.0",
-    "dms2dec-PTBR.js": "https://github.com/wancharle/dms2dec.js.git#~1.0.4"
+    "dms2dec-PTBR.js": "https://github.com/wancharle/dms2dec.js.git#~1.0.4",
+    "papaparse": "~4.1.1"
   }
 }
