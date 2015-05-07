@@ -1,8 +1,14 @@
 events = require './events'
 ajax = require './ajax'
 utils = require './utils'
+contexto = {}
+
+contexto = utils 
 
 class DataSource
+
+  @EVENT_LOADED = 'datasourceLoaded.slsapi'
+  @EVENT_LOAD_FAIL = 'datasourceLoadFail.slsapi'
 
   constructor: (url,func_code)->
     # process and validate the datasource
@@ -45,9 +51,9 @@ class DataSource
   # convert, store e taxomize each note 
   addItem : (i,func_convert) =>
     try
-      geoItem = func_convert(i)
+      geoItem = func_convert(i,contexto)
     catch e 
-      console.error("Erro em Dados::addItem: #{e.message}",i)
+      console.error("Erro em DataSource::addItem: #{e.message}",i)
       geoItem = null
           
     if geoItem
@@ -65,6 +71,7 @@ class DataSource
 
       cat = @_getCatOrCreate(geoItem)
       cat.push(geoItem)
+    return geoItem
 
   # taxonomize the notes
   addChild: (parentId,child) ->
@@ -98,37 +105,18 @@ class DataSource
     try
       for d, i in data
         @addItem(d,fonte.func_code)
-      events.trigger('slsapi:datasource:load',config.id)
+      events.trigger(config.id,DataSource.EVENT_LOADED)
     catch e
       console.error(e.toString())
-      events.trigger('slsapi:datasource:loadFail',config.id)
+      events.trigger(config.id,DataSource.EVENT_LOAD_FAIL)
       return
 
   loadFromCache: (config)->
+    # TODO: stanciar DataSource de cache em classe separada
     ajax.getJSON("#{config.urlsls}/note/listaExternal?noteid=#{config.noteid}&fonteIndex=#{i}", (data)=>
               fonte2 ={ url:@url,func_code: (i)-> return i}           
               @onDataLoaded(data,fonte2)
     )
-
-  loadFromGoogle: (config)->
-    Tabletop.init {
-      'key':@url,
-      'callback':  (data)=>
-          @onDataLoaded(data,@,config)
-      ,
-      'simpleSheet': true
-    }
-
-  loadFromCsv: ()->
-    Papa.parse(@url, {
-      header:true,
-      download: true,
-      error: ()-> alert("Erro ao baixar arquivo csv da fonte de dados:\n#{fonte.url}"),
-      complete: (results, file) =>
-        @onDataLoaded(results['data'],fonte,config)
-      }
-    )
-
 
    
 module.exports = {DataSource:DataSource}

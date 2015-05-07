@@ -4,6 +4,10 @@ ajax = require './ajax'
    
 
 class Config
+  @debug = true
+  @EVENT_READY = 'config:ready.slsapi'
+  @EVENT_FAIL = 'config:fail.slsapi'
+
   constructor: (opcoes)->
     @id = utils.md5(JSON.stringify(opcoes))
 
@@ -14,10 +18,10 @@ class Config
       xhr = ajax.get opcoes.urlConfServico
       xhr.done (opcoes) ->
         self.parseOpcoes(opcoes)
-        events.trigger('slsapi.config:sucesso',self.id)
+        events.trigger(self.id,Config.EVENT_READY)
       xhr.fail ()->
-        events.trigger('slsapi.config:fail',{id:self.id,error:'Error: não foi possível carregar configuração da visualização'})
         console.log('Error: não foi possível carregar configuração da visualização')
+        events.trigger(self.id,Config.EVENT_FAIL,'Error: não foi possível carregar configuração da visualização')
 
 
   parseOpcoes: (opcoes,view)->

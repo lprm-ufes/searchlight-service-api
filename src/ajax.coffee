@@ -1,5 +1,6 @@
 if typeof process.browser == 'undefined' 
   requestPromise = require('request-promise')
+  errors = require('request-promise/errors')
   requestPromise.defaults({jar: true})
   CLIENT_SIDE = false
 else

@@ -8,6 +8,7 @@ else
   localStorage = window.localStorage
   md5 = window.md5 
 
+events = require './events'
 
 class User
   @instances = {} 
@@ -56,18 +57,18 @@ class User
     #disable the button so we can't resubmit while we wait
     if (u and  p)
       url = @config.loginURL
-      $(document).trigger('slsapi.user:loginStart')
+      events.trigger(@config.id,'slsapi.user:loginStart')
       $.post(url, {username:u,password:p}, (json) =>
         if json.error
           alert(json.error)
         else
           @setUsuario u, json
           #dispara mensagem de login com sucesso
-          $(document).trigger('slsapi.user:loginSuccess')
+          events.trigger(@config.id,'slsapi.user:loginSuccess')
 
-        $(document).trigger('slsapi.user:loginFinish')
-      ,"json").fail(() ->
-        $(document).trigger('slsapi.user:loginFail')
+        events.trigger(@config.id,'slsapi.user:loginFinish')
+      ,"json").fail(() =>
+        events.trigger(@config.id,'slsapi.user:loginFail')
         )
     return false
    

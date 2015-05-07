@@ -13,14 +13,24 @@ class SLSAPI
     @user = new User(@config)
     @notes = new notes.Notes(@config)
     @notebook = new Notebook(@config)
-  
-   
-SLSAPI.trigger = events.trigger
-SLSAPI.on = events.on
+ 
+  # shortcuts which abstract the use of events
+  trigger: (event,params)->
+    events.trigger(@config.id,event,params)
 
+  on: (event,params)->
+    events.on(@config.id,event,params)
+
+  off: (event,params)->
+    events.off(@config.id,event,params)
+
+
+   
+SLSAPI.Config = Config
 SLSAPI.Notes = notes.Notes
 SLSAPI.dataPool = dataPool
 SLSAPI.ajax = ajax
+
 
 if typeof process.browser!= 'undefined'
   window.SLSAPI = SLSAPI

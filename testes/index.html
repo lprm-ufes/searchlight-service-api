@@ -5,26 +5,19 @@
 <script src="../bower_components/jquery/dist/jquery.min.js"></script>
 <script src="../bower_components/blueimp-md5/js/md5.min.js"></script>
 <script src="../bower_components/tabletop/src/tabletop.js"></script>
+<script src="../bower_components/dms2dec-PTBR.js/dms2dec.js"></script>
+<script src="../bower_components/papaparse/papaparse.min.js"></script>
 <script src="../dist/slsapi.js"></script>
+<script src="../dist/teste.js"></script>
+</head>
+<body>
 <script>
-
+testemain();
 var api = new SLSAPI({urlConfServico:'http://sl.wancharle.com.br/notebook/5514580391f57bdf0d0ba65b'})
 window.nbId = null;
 SLSAPI.debug=true;
-SLSAPI.on('slsapi.config:sucesso',function(id){
-xhr = SLSAPI.ajax.get('http://sl.wancharle.com.br/note/553a69b8a7072f36708c03c7')
-xhr.done(function(data){
-    data['config']['dataSources']=data['config']['fontes']
-api.config.parseOpcoes(data['config'], true)
-dataPool = new SLSAPI.dataPool.DataPool(api.config)
-dataPool.loadAllData('teste');
-SLSAPI.on('dados:carregados',function (id){
-   if (id == api.config.id){
-        console.log(dataPool.dataSources[0].notes)
-       }
- })
-});
 
+api.on('slsaapi.config:sucesso',function(id){
 
 api.notebook.getByName(
 'lprm_teste', function (data){
@@ -78,13 +71,11 @@ $(document).ready(function (){
        api.notes.enviar(ob)
    })
 
-   $(document).on('slsapi.user:loginFinish slsapi.user:loginFail slsapi.note:uploadFinish',function(){
+    api.on('slsapi.user:loginFinish slsapi.user:loginFail slsapi.note:uploadFinish',function(){
     check_status_logado()      
    })
 });
 </script>
-</head>
-<body>
 <div id='deslogado'>
     <p>login: <input id='username' value=''></p>
     <p>senha: <input id='password' value=''></p>

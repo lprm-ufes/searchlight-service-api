@@ -1,9 +1,11 @@
-if typeof process.browser == 'undefined' 
+if typeof process.browser == 'undefined'
   md5 = require('blueimp-md5').md5
   CLIENT_SIDE = false
+  dms2decPTBR = require('dms2dec-ptbr')
 else
   CLIENT_SIDE = true
   md5 = window.md5 
+  dms2decPTBR=window.dms2decPTBR
 
  
 class Dicionario
@@ -25,7 +27,7 @@ getURLParameter= (name) ->
 
 string2function = (func_code) ->
   #converte uma string para funcao          code = fonte.func_code
-  re = /.*function *(\w*) *\( *(\w*) *\) *\{/mg
+  re = /.*function *(\w*) *\( *([\w\,]*) *\) *\{/mg
   if ((m = re.exec(func_code)) != null)
     if (m.index == re.lastIndex)
       re.lastIndex++
@@ -68,12 +70,13 @@ if CLIENT_SIDE
   window.getURLParameter = getURLParameter
 
 
-module.exports = { 
+module.exports = {
     Dicionario: Dicionario
     parseFloatPTBR: parseFloatPTBR
     string2function: string2function
     getURLParameter: getURLParameter
     md5: md5
+    dms2decPTBR:dms2decPTBR
   }
 # vim: set ts=2 sw=2 sts=2 expandtab:
 

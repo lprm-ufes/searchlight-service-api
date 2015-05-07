@@ -1,4 +1,5 @@
 ajax = require './ajax'
+events = require './events'
 
 class Notes
   @instances = {} 
@@ -41,7 +42,7 @@ class Notes
     params = note
     params.notebook = notebookId
 
-    $(document).trigger('slsapi.note:uploadStart')
+    events.trigger(@config.id,'slsapi.note:uploadStart')
     if note.fotoURI
         options = new FileUploadOptions()
         options.params = params
@@ -53,21 +54,21 @@ class Notes
         ft = new FileTransfer()
         ft.upload(
           note.fotoURI,
-          encodeURI(@config.createURL), 
+          encodeURI(@config.createURL),
           (r) =>
-            $(document).trigger('slsapi.note:uploadFinish')
+            events.trigger(@config.id,'slsapi.note:uploadFinish')
             callback_ok(r)
           ,(error) =>
-            $(document).trigger('slsapi.note:uploadFail')
+            events.trigger(@config.id,'slsapi.note:uploadFail')
             callback_fail(error)
           , options)
     else
-      $.post(@config.createURL, params, (json) ->
-        $(document).trigger('slsapi.note:uploadFinish')
+      $.post(@config.createURL, params, (json) =>
+        events.trigger(@config.id,'slsapi.note:uploadFinish')
         callback_ok(json)
-      ,'json').fail( (error) ->
-        $(document).trigger('slsapi.note:uploadFail')
-        callback_fail(error) 
+      ,'json').fail( (error) =>
+        events.trigger(@config.id,'slsapi.note:uploadFail')
+        callback_fail(error)
       )
  
 module.exports = {'Notes':Notes}

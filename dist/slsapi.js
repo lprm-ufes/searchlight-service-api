@@ -92,10 +92,11 @@ process.umask = function() { return 0; };
 
 },{}],2:[function(require,module,exports){
 (function (process){
-var Ajax, CLIENT_SIDE, del, get, getJSON, getJSONP, post, requestPromise;
+var Ajax, CLIENT_SIDE, del, errors, get, getJSON, getJSONP, post, requestPromise;
 
 if (typeof process.browser === 'undefined') {
   requestPromise = require('request-promise');
+  errors = require('request-promise/errors');
   requestPromise.defaults({
     jar: true
   });
@@ -224,7 +225,7 @@ module.exports = {
 
 
 }).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"request-promise":undefined}],3:[function(require,module,exports){
+},{"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"request-promise":undefined,"request-promise/errors":undefined}],3:[function(require,module,exports){
 var Config, ajax, events, utils;
 
 events = require('./events');
@@ -234,6 +235,12 @@ utils = require('./utils');
 ajax = require('./ajax');
 
 Config = (function() {
+  Config.debug = true;
+
+  Config.EVENT_READY = 'config:ready.slsapi';
+
+  Config.EVENT_FAIL = 'config:fail.slsapi';
+
   function Config(opcoes) {
     var self, xhr;
     this.id = utils.md5(JSON.stringify(opcoes));
@@ -243,14 +250,11 @@ Config = (function() {
       xhr = ajax.get(opcoes.urlConfServico);
       xhr.done(function(opcoes) {
         self.parseOpcoes(opcoes);
-        return events.trigger('slsapi.config:sucesso', self.id);
+        return events.trigger(self.id, Config.EVENT_READY);
       });
       xhr.fail(function() {
-        events.trigger('slsapi.config:fail', {
-          id: self.id,
-          error: 'Error: não foi possível carregar configuração da visualização'
-        });
-        return console.log('Error: não foi possível carregar configuração da visualização');
+        console.log('Error: não foi possível carregar configuração da visualização');
+        return events.trigger(self.id, Config.EVENT_FAIL, 'Error: não foi possível carregar configuração da visualização');
       });
     }
   }
@@ -279,8 +283,8 @@ module.exports = {
 
 
 
-},{"./ajax":2,"./events":7,"./utils":12}],4:[function(require,module,exports){
-var DataPool, DataSource, DataSourceGoogle, createDataSource, events,
+},{"./ajax":2,"./events":8,"./utils":13}],4:[function(require,module,exports){
+var DataPool, DataSource, DataSourceCSV, DataSourceGoogle, createDataPool, createDataSource, events,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 events = require('./events');
@@ -289,23 +293,47 @@ DataSource = require('./datasource').DataSource;
 
 DataSourceGoogle = require('./datasourceGoogle').DataSourceGoogle;
 
+DataSourceCSV = require('./datasourceCSV').DataSourceCSV;
+
 createDataSource = function(url, functionCode) {
   if (url.indexOf("docs.google.com/spreadsheet") > -1) {
     return new DataSourceGoogle(url, functionCode);
   } else {
-    return new DataSource(url, functionCode);
+    if (url.slice(-4) === ".csv") {
+      return new DataSourceCSV(url, functionCode);
+    } else {
+      return new DataSource(url, functionCode);
+    }
   }
 };
 
+createDataPool = function(config) {
+  var instance;
+  instance = DataPool.getInstance(config);
+  if (instance) {
+    instance.destroy();
+  }
+  instance = new DataPool();
+  instance._constructor(config);
+  return instance;
+};
+
 DataPool = (function() {
+  function DataPool() {
+    this.loadAllData = bind(this.loadAllData, this);
+  }
+
+  DataPool.EVENT_LOAD_START = 'datapool:start.slsapi';
+
+  DataPool.EVENT_LOAD_STOP = 'datapool:stop.slsapi';
+
   DataPool.instances = {};
 
   DataPool.getInstance = function(config) {
     return this.instances[config.id];
   };
 
-  function DataPool(config) {
-    this.loadAllData = bind(this.loadAllData, this);
+  DataPool.prototype._constructor = function(config) {
     var dataSources, index, j, len, s;
     DataPool.instances[config.id] = this;
     this.config = config;
@@ -315,14 +343,12 @@ DataPool = (function() {
       s = dataSources[index];
       this.addDataSource(s);
     }
-    events.on('slsapi:datasource:load', (function(_this) {
-      return function(id) {
-        if (id === config.id) {
-          return _this.onDataSourceLoaded();
-        }
+    return events.on(config.id, DataSource.EVENT_LOADED, (function(_this) {
+      return function() {
+        return _this.onDataSourceLoaded();
       };
     })(this));
-  }
+  };
 
   DataPool.prototype.addDataSource = function(s) {
     var source;
@@ -348,11 +374,11 @@ DataPool = (function() {
     return this.dataSources[i];
   };
 
-  DataPool.prototype.loadAllData = function(callerId) {
+  DataPool.prototype.loadAllData = function() {
     var i, j, len, obj, ref, results, source;
     obj = this;
     this.sourcesLoaded = 0;
-    events.trigger("dados:carregando", callerId);
+    events.trigger(this.config.id, DataPool.EVENT_LOAD_START);
     ref = this.dataSources;
     results = [];
     for (i = j = 0, len = ref.length; j < len; i = ++j) {
@@ -377,8 +403,14 @@ DataPool = (function() {
   DataPool.prototype.onDataSourceLoaded = function() {
     this.sourcesLoaded += 1;
     if (this.sourcesLoaded === this.dataSources.length) {
-      return events.trigger('dados:carregados', this.config.id);
+      return events.trigger(this.config.id, DataPool.EVENT_LOAD_STOP, this);
     }
+  };
+
+  DataPool.prototype.destroy = function() {
+    events.off(this.config.id, DataSource.EVENT_LOADED);
+    events.off(this.config.id, DataPool.EVENT_LOAD_START);
+    return events.off(this.config.id, DataPool.EVENT_LOAD_STOP);
   };
 
   return DataPool;
@@ -386,13 +418,14 @@ DataPool = (function() {
 })();
 
 module.exports = {
-  DataPool: DataPool
+  DataPool: DataPool,
+  createDataPool: createDataPool
 };
 
 
 
-},{"./datasource":5,"./datasourceGoogle":6,"./events":7}],5:[function(require,module,exports){
-var DataSource, ajax, events, utils,
+},{"./datasource":5,"./datasourceCSV":6,"./datasourceGoogle":7,"./events":8}],5:[function(require,module,exports){
+var DataSource, ajax, contexto, events, utils,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 events = require('./events');
@@ -401,7 +434,15 @@ ajax = require('./ajax');
 
 utils = require('./utils');
 
+contexto = {};
+
+contexto = utils;
+
 DataSource = (function() {
+  DataSource.EVENT_LOADED = 'datasourceLoaded.slsapi';
+
+  DataSource.EVENT_LOAD_FAIL = 'datasourceLoadFail.slsapi';
+
   function DataSource(url, func_code) {
     this.addItem = bind(this.addItem, this);
     this._getCatOrCreate = bind(this._getCatOrCreate, this);
@@ -453,10 +494,10 @@ DataSource = (function() {
   DataSource.prototype.addItem = function(i, func_convert) {
     var cat, e, geoItem;
     try {
-      geoItem = func_convert(i);
+      geoItem = func_convert(i, contexto);
     } catch (_error) {
       e = _error;
-      console.error("Erro em Dados::addItem: " + e.message, i);
+      console.error("Erro em DataSource::addItem: " + e.message, i);
       geoItem = null;
     }
     if (geoItem) {
@@ -473,8 +514,9 @@ DataSource = (function() {
         this.addChild(geoItem.id_parent, geoItem);
       }
       cat = this._getCatOrCreate(geoItem);
-      return cat.push(geoItem);
+      cat.push(geoItem);
     }
+    return geoItem;
   };
 
   DataSource.prototype.addChild = function(parentId, child) {
@@ -522,11 +564,11 @@ DataSource = (function() {
         d = data[i];
         this.addItem(d, fonte.func_code);
       }
-      return events.trigger('slsapi:datasource:load', config.id);
+      return events.trigger(config.id, DataSource.EVENT_LOADED);
     } catch (_error) {
       e = _error;
       console.error(e.toString());
-      events.trigger('slsapi:datasource:loadFail', config.id);
+      events.trigger(config.id, DataSource.EVENT_LOAD_FAIL);
     }
   };
 
@@ -545,33 +587,6 @@ DataSource = (function() {
     })(this));
   };
 
-  DataSource.prototype.loadFromGoogle = function(config) {
-    return Tabletop.init({
-      'key': this.url,
-      'callback': (function(_this) {
-        return function(data) {
-          return _this.onDataLoaded(data, _this, config);
-        };
-      })(this),
-      'simpleSheet': true
-    });
-  };
-
-  DataSource.prototype.loadFromCsv = function() {
-    return Papa.parse(this.url, {
-      header: true,
-      download: true,
-      error: function() {
-        return alert("Erro ao baixar arquivo csv da fonte de dados:\n" + fonte.url);
-      },
-      complete: (function(_this) {
-        return function(results, file) {
-          return _this.onDataLoaded(results['data'], fonte, config);
-        };
-      })(this)
-    });
-  };
-
   return DataSource;
 
 })();
@@ -582,7 +597,79 @@ module.exports = {
 
 
 
-},{"./ajax":2,"./events":7,"./utils":12}],6:[function(require,module,exports){
+},{"./ajax":2,"./events":8,"./utils":13}],6:[function(require,module,exports){
+(function (process){
+var CLIENT_SIDE, DataSource, DataSourceCSV, ajax, csvParse,
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
+
+if (typeof process.browser === 'undefined') {
+  CLIENT_SIDE = false;
+  csvParse = require('babyparse');
+} else {
+  csvParse = Papa;
+  CLIENT_SIDE = true;
+}
+
+DataSource = require('./datasource').DataSource;
+
+ajax = require('./ajax');
+
+DataSourceCSV = (function(superClass) {
+  extend(DataSourceCSV, superClass);
+
+  function DataSourceCSV() {
+    return DataSourceCSV.__super__.constructor.apply(this, arguments);
+  }
+
+  DataSourceCSV.prototype.loadData = function(config) {
+    var xhr;
+    if (CLIENT_SIDE) {
+      return csvParse.parse(this.url, {
+        header: true,
+        download: true,
+        error: (function(_this) {
+          return function() {
+            return alert("Erro ao baixar arquivo csv da fonte de dados:\n" + _this.url);
+          };
+        })(this),
+        complete: (function(_this) {
+          return function(results, file) {
+            console.log('teste');
+            return _this.onDataLoaded(results['data'], _this, config);
+          };
+        })(this)
+      });
+    } else {
+      xhr = ajax.get(this.url);
+      xhr.done((function(_this) {
+        return function(body) {
+          var json, parsed;
+          parsed = csvParse.parse(body, {
+            header: true
+          });
+          json = parsed.data;
+          return _this.onDataLoaded(json, _this, config);
+        };
+      })(this));
+      return xhr.fail(function(error) {
+        return console.log('error ao baixar CSV', error);
+      });
+    }
+  };
+
+  return DataSourceCSV;
+
+})(DataSource);
+
+module.exports = {
+  DataSourceCSV: DataSourceCSV
+};
+
+
+
+}).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
+},{"./ajax":2,"./datasource":5,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"babyparse":undefined}],7:[function(require,module,exports){
 (function (process){
 var CLIENT_SIDE, DataSource, DataSourceGoogle, TABLETOP,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -628,47 +715,63 @@ module.exports = {
 
 
 }).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"./datasource":5,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"tabletop":undefined}],7:[function(require,module,exports){
+},{"./datasource":5,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"tabletop":undefined}],8:[function(require,module,exports){
 (function (process){
-var CLIENT_SIDE, bind, emitter, events, trigger;
+var bind, emitter, emitters, events, select, trigger, unbind;
 
 emitter = null;
 
 if (typeof process.browser === 'undefined') {
-  CLIENT_SIDE = false;
   events = require('events');
-  emitter = new events.EventEmitter();
+  emitters = {};
+  select = function(id) {
+    if (!(id in emitters)) {
+      emitters[id] = new events.EventEmitter();
+    }
+    return emitters[id];
+  };
+  trigger = function(id, event, param) {
+    return select(id).emit(event, param);
+  };
+  bind = function(id, event, cb) {
+    return select(id).once(event, cb);
+  };
+  unbind = function(id, event, cb) {};
 } else {
-  CLIENT_SIDE = true;
-}
-
-trigger = function(event, param) {
-  if (CLIENT_SIDE) {
-    return $(document).trigger(event, param);
-  } else {
-    return emitter.emit(event, param);
-  }
-};
-
-bind = function(event, cb) {
-  if (CLIENT_SIDE) {
-    return $(document).on(event, function(caller, params) {
+  select = function(id) {
+    var target;
+    target = $("#slEvent" + id);
+    if (target.length <= 0) {
+      target = $("<div id='slEvent" + id + "'> </div>");
+      $("body").append(target);
+    }
+    return target;
+  };
+  trigger = function(id, event, param) {
+    return select(id).trigger(event, param);
+  };
+  bind = function(id, event, cb) {
+    var f;
+    f = function(caller, params) {
       return cb(params);
-    });
-  } else {
-    return emitter.on(event, cb);
-  }
-};
+    };
+    return select(id).on(event, f);
+  };
+  unbind = function(id, event, cb) {
+    return select(id).off(event);
+  };
+}
 
 module.exports = {
   trigger: trigger,
-  on: bind
+  on: bind,
+  off: unbind
 };
 
 
 
 }).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"events":undefined}],8:[function(require,module,exports){
+},{"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"events":undefined}],9:[function(require,module,exports){
 var Notebook, ajax;
 
 ajax = require('./ajax');
@@ -718,10 +821,12 @@ module.exports = {
 
 
 
-},{"./ajax":2}],9:[function(require,module,exports){
-var Notes, ajax;
+},{"./ajax":2}],10:[function(require,module,exports){
+var Notes, ajax, events;
 
 ajax = require('./ajax');
+
+events = require('./events');
 
 Notes = (function() {
   Notes.instances = {};
@@ -799,7 +904,7 @@ Notes = (function() {
     }
     params = note;
     params.notebook = notebookId;
-    $(document).trigger('slsapi.note:uploadStart');
+    events.trigger(this.config.id, 'slsapi.note:uploadStart');
     if (note.fotoURI) {
       options = new FileUploadOptions();
       options.params = params;
@@ -810,23 +915,27 @@ Notes = (function() {
       ft = new FileTransfer();
       return ft.upload(note.fotoURI, encodeURI(this.config.createURL), (function(_this) {
         return function(r) {
-          $(document).trigger('slsapi.note:uploadFinish');
+          events.trigger(_this.config.id, 'slsapi.note:uploadFinish');
           return callback_ok(r);
         };
       })(this), (function(_this) {
         return function(error) {
-          $(document).trigger('slsapi.note:uploadFail');
+          events.trigger(_this.config.id, 'slsapi.note:uploadFail');
           return callback_fail(error);
         };
       })(this), options);
     } else {
-      return $.post(this.config.createURL, params, function(json) {
-        $(document).trigger('slsapi.note:uploadFinish');
-        return callback_ok(json);
-      }, 'json').fail(function(error) {
-        $(document).trigger('slsapi.note:uploadFail');
-        return callback_fail(error);
-      });
+      return $.post(this.config.createURL, params, (function(_this) {
+        return function(json) {
+          events.trigger(_this.config.id, 'slsapi.note:uploadFinish');
+          return callback_ok(json);
+        };
+      })(this), 'json').fail((function(_this) {
+        return function(error) {
+          events.trigger(_this.config.id, 'slsapi.note:uploadFail');
+          return callback_fail(error);
+        };
+      })(this));
     }
   };
 
@@ -840,7 +949,7 @@ module.exports = {
 
 
 
-},{"./ajax":2}],10:[function(require,module,exports){
+},{"./ajax":2,"./events":8}],11:[function(require,module,exports){
 (function (process){
 var Config, Notebook, SLSAPI, User, ajax, dataPool, events, notes;
 
@@ -866,13 +975,23 @@ SLSAPI = (function() {
     this.notebook = new Notebook(this.config);
   }
 
+  SLSAPI.prototype.trigger = function(event, params) {
+    return events.trigger(this.config.id, event, params);
+  };
+
+  SLSAPI.prototype.on = function(event, params) {
+    return events.on(this.config.id, event, params);
+  };
+
+  SLSAPI.prototype.off = function(event, params) {
+    return events.off(this.config.id, event, params);
+  };
+
   return SLSAPI;
 
 })();
 
-SLSAPI.trigger = events.trigger;
-
-SLSAPI.on = events.on;
+SLSAPI.Config = Config;
 
 SLSAPI.Notes = notes.Notes;
 
@@ -889,9 +1008,9 @@ module.exports = SLSAPI;
 
 
 }).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"./ajax":2,"./config":3,"./datapool":4,"./events":7,"./notebook":8,"./notes":9,"./user":11,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1}],11:[function(require,module,exports){
+},{"./ajax":2,"./config":3,"./datapool":4,"./events":8,"./notebook":9,"./notes":10,"./user":12,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1}],12:[function(require,module,exports){
 (function (process){
-var CLIENT_SIDE, LocalStorage, User, localStorage, md5,
+var CLIENT_SIDE, LocalStorage, User, events, localStorage, md5,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 if (typeof process.browser === 'undefined') {
@@ -904,6 +1023,8 @@ if (typeof process.browser === 'undefined') {
   localStorage = window.localStorage;
   md5 = window.md5;
 }
+
+events = require('./events');
 
 User = (function() {
   User.instances = {};
@@ -960,7 +1081,7 @@ User = (function() {
     var url;
     if (u && p) {
       url = this.config.loginURL;
-      $(document).trigger('slsapi.user:loginStart');
+      events.trigger(this.config.id, 'slsapi.user:loginStart');
       $.post(url, {
         username: u,
         password: p
@@ -970,13 +1091,15 @@ User = (function() {
             alert(json.error);
           } else {
             _this.setUsuario(u, json);
-            $(document).trigger('slsapi.user:loginSuccess');
+            events.trigger(_this.config.id, 'slsapi.user:loginSuccess');
           }
-          return $(document).trigger('slsapi.user:loginFinish');
+          return events.trigger(_this.config.id, 'slsapi.user:loginFinish');
         };
-      })(this), "json").fail(function() {
-        return $(document).trigger('slsapi.user:loginFail');
-      });
+      })(this), "json").fail((function(_this) {
+        return function() {
+          return events.trigger(_this.config.id, 'slsapi.user:loginFail');
+        };
+      })(this));
     }
     return false;
   };
@@ -992,18 +1115,20 @@ module.exports = {
 
 
 }).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"blueimp-md5":undefined,"node-localstorage":undefined}],12:[function(require,module,exports){
+},{"./events":8,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"blueimp-md5":undefined,"node-localstorage":undefined}],13:[function(require,module,exports){
 (function (process){
-var CLIENT_SIDE, Dicionario, getURLParameter, md5, parseFloatPTBR, string2function,
+var CLIENT_SIDE, Dicionario, dms2decPTBR, getURLParameter, md5, parseFloatPTBR, string2function,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 if (typeof process.browser === 'undefined') {
   md5 = require('blueimp-md5').md5;
   CLIENT_SIDE = false;
+  dms2decPTBR = require('dms2dec-ptbr');
 } else {
   CLIENT_SIDE = true;
   md5 = window.md5;
+  dms2decPTBR = window.dms2decPTBR;
 }
 
 Dicionario = (function() {
@@ -1034,7 +1159,7 @@ getURLParameter = function(name) {
 
 string2function = function(func_code) {
   var m, nome, re;
-  re = /.*function *(\w*) *\( *(\w*) *\) *\{/mg;
+  re = /.*function *(\w*) *\( *([\w\,]*) *\) *\{/mg;
   if ((m = re.exec(func_code)) !== null) {
     if (m.index === re.lastIndex) {
       re.lastIndex++;
@@ -1071,10 +1196,11 @@ module.exports = {
   parseFloatPTBR: parseFloatPTBR,
   string2function: string2function,
   getURLParameter: getURLParameter,
-  md5: md5
+  md5: md5,
+  dms2decPTBR: dms2decPTBR
 };
 
 
 
 }).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"blueimp-md5":undefined}]},{},[10]);
+},{"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"blueimp-md5":undefined,"dms2dec-ptbr":undefined}]},{},[11]);

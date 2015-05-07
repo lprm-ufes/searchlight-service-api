@@ -1,27 +1,48 @@
-
 emitter= null
 if typeof process.browser == 'undefined' 
-  CLIENT_SIDE = false
+  # define serveside functions
   events = require('events')
-  emitter = new events.EventEmitter()
+
+  emitters = {}
+  
+  select = (id) ->
+    if not(id of emitters)
+      emitters[id] = new events.EventEmitter()
+    return emitters[id]
+
+  trigger = (id,event, param) ->
+    select(id).emit(event,param)
+
+  bind = (id,event,cb) ->
+    select(id).once(event,cb)
+
+  unbind = (id,event,cb)->
+    
+
 else
-  CLIENT_SIDE = true
+  # define clientside functions
+  select = (id)->
+    target = $("#slEvent#{id}")
+    if target.length <= 0
+      # create a target element to serve as emitter object
+      target = $("<div id='slEvent#{id}'> </div>")
+      $("body").append(target)
+    return target
+
+  trigger= (id,event, param)->
+    select(id).trigger(event,param)
+
+  bind = (id,event,cb) ->
+    f = (caller,params) -> cb(params)
+    select(id).on(event,f)
+
+  unbind = (id,event,cb) ->
+    select(id).off(event)
 
 
-trigger= (event, param)->
-    if CLIENT_SIDE
-      $(document).trigger(event,param)
-    else
-      emitter.emit(event,param)
 
 
-bind = (event,cb) ->
-    if CLIENT_SIDE
-      $(document).on(event, (caller,params) -> cb(params))
-    else
-      emitter.on(event,cb)
-
-module.exports = {trigger:trigger, on:bind}
+module.exports = {trigger:trigger, on:bind, off:unbind}
 
 # vim: set ts=2 sw=2 sts=2 expandtab:
 
