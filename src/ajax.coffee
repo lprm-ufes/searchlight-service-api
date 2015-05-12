@@ -62,7 +62,7 @@ class Ajax
   fail: (cb)->
     if isRunningOnBrowser
       cb2 = (jq)->
-        body = jq.responseJSON or jq.responseText
+        body = jq.responseJSON or jq.responseText 
         statusCode = jq.status
         reason = {
           response:

@@ -1074,6 +1074,10 @@ User = (function() {
 
   User.EVENT_LOGIN_FAIL = 'userLoginFail.slsapi';
 
+  User.EVENT_LOGOUT_SUCCESS = 'userLogoutSuccess.slsapi';
+
+  User.EVENT_LOGOUT_FAIL = 'userLogoutFail.slsapi';
+
   User.instances = {};
 
   User.getInstance = function(config) {
@@ -1117,11 +1121,22 @@ User = (function() {
     return this.storage.setItem('logginTime', (new Date()).getTime());
   };
 
-  User.prototype.logout = function(callback) {
+  User.prototype.logout = function() {
+    var xhr;
     this.storage.removeItem('Usuario');
     this.usuario = null;
     this.user_id = null;
-    return $.get(this.config.logoutURL, callback);
+    xhr = ajax.get(this.config.logoutURL);
+    xhr.done((function(_this) {
+      return function(req) {
+        return events.trigger(_this.config.id, User.EVENT_LOGOUT_SUCCESS, req);
+      };
+    })(this));
+    return xhr.fail((function(_this) {
+      return function(req) {
+        return events.trigger(_this.config.id, User.EVENT_LOGOUT_FAIL, req);
+      };
+    })(this));
   };
 
   User.prototype.login = function(u, p) {

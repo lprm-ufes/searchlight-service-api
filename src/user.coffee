@@ -16,6 +16,8 @@ class User
   @EVENT_LOGIN_START = 'userLoginStart.slsapi'
   @EVENT_LOGIN_FINISH = 'userLoginFinish.slsapi'
   @EVENT_LOGIN_FAIL = 'userLoginFail.slsapi'
+  @EVENT_LOGOUT_SUCCESS = 'userLogoutSuccess.slsapi'
+  @EVENT_LOGOUT_FAIL = 'userLogoutFail.slsapi'
 
   @instances = {} 
 
@@ -39,7 +41,6 @@ class User
       return false
 
 
-
   getUsuario: () ->
     @usuario = @storage.getItem('Usuario')
     @user_id = @storage.getItem('user_id')
@@ -53,11 +54,13 @@ class User
     @storage.setItem('user_id',@user_id)
     @storage.setItem('logginTime',(new Date()).getTime())
 
-  logout: (callback) ->
+  logout: () ->
     @storage.removeItem('Usuario')
     @usuario = null
     @user_id = null
-    $.get(@config.logoutURL,callback)
+    xhr= ajax.get(@config.logoutURL)
+    xhr.done((req)=> events.trigger(@config.id,User.EVENT_LOGOUT_SUCCESS,req))
+    xhr.fail((req)=> events.trigger(@config.id,User.EVENT_LOGOUT_FAIL,req))
 
   login: (u,p) =>
     #disable the button so we can't resubmit while we wait
