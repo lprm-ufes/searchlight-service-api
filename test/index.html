@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SLSAPI tests</title>
+  <link rel="stylesheet" media="all" href="vendor/mocha.css">
+</head>
+<body>
+  <div id="mocha"><p><a href=".">Index</a></p></div>
+  <div id="messages"></div>
+  <div id="fixtures"></div>
+<script src="../bower_components/jquery/dist/jquery.min.js"></script>
+<script src="../bower_components/blueimp-md5/js/md5.min.js"></script>
+<script src="../bower_components/tabletop/src/tabletop.js"></script>
+<script src="../bower_components/dms2dec-PTBR.js/dms2dec.js"></script>
+<script src="../bower_components/papaparse/papaparse.min.js"></script>
+
+  <script src="vendor/mocha.js"></script>
+  <script src="vendor/chai.js"></script>
+<script src="../dist/slsapi.js"></script>
+  <script>mocha.setup('bdd')</script>
+<script src="../dist/test.js"></script>
+<script>
+chai.should()
+slsapiTest(SLSAPI);
+ mocha.run();</script>
+</body>
+</html>
