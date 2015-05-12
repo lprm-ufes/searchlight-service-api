@@ -91,25 +91,23 @@ process.chdir = function (dir) {
 process.umask = function() { return 0; };
 
 },{}],2:[function(require,module,exports){
-(function (process){
-var Ajax, CLIENT_SIDE, del, errors, get, getJSON, getJSONP, post, requestPromise;
+var Ajax, del, errors, get, getJSON, getJSONP, isRunningOnBrowser, post, requestPromise;
 
-if (typeof process.browser === 'undefined') {
+isRunningOnBrowser = require('./utils').isRunningOnBrowser;
+
+if (!isRunningOnBrowser) {
   requestPromise = require('request-promise');
   errors = require('request-promise/errors');
   requestPromise.defaults({
     jar: true
   });
-  CLIENT_SIDE = false;
-} else {
-  CLIENT_SIDE = true;
 }
 
 Ajax = (function() {
   function Ajax() {
     this.xhr = null;
     this.parseJson = true;
-    if (CLIENT_SIDE) {
+    if (isRunningOnBrowser) {
       $.ajaxSetup({
         crossDomain: true,
         xhrFields: {
@@ -120,7 +118,7 @@ Ajax = (function() {
   }
 
   Ajax.prototype.get = function(params) {
-    if (CLIENT_SIDE) {
+    if (isRunningOnBrowser) {
       this.xhr = $.get(params);
     } else {
       this.xhr = requestPromise.get(params);
@@ -129,7 +127,7 @@ Ajax = (function() {
   };
 
   Ajax.prototype.post = function(params) {
-    if (CLIENT_SIDE) {
+    if (isRunningOnBrowser) {
       if ("data" in params) {
         this.xhr = $.post(params['url'], params['data']);
       } else {
@@ -149,7 +147,7 @@ Ajax = (function() {
   };
 
   Ajax.prototype["delete"] = function(params) {
-    if (CLIENT_SIDE) {
+    if (isRunningOnBrowser) {
       params.type = "DELETE";
       params.crossDomains = true;
       this.xhr = $.ajax(params);
@@ -162,7 +160,7 @@ Ajax = (function() {
   Ajax.prototype.done = function(cb) {
     var cb2, self;
     self = this;
-    if (CLIENT_SIDE) {
+    if (isRunningOnBrowser) {
       return this.xhr.done(cb);
     } else {
       cb2 = function(data) {
@@ -177,7 +175,7 @@ Ajax = (function() {
 
   Ajax.prototype.fail = function(cb) {
     var cb2;
-    if (CLIENT_SIDE) {
+    if (isRunningOnBrowser) {
       cb2 = function(jq) {
         var body, reason, statusCode;
         body = jq.responseJSON || jq.responseText;
@@ -241,7 +239,7 @@ getJSON = function(url, func) {
   });
 };
 
-if (CLIENT_SIDE) {
+if (isRunningOnBrowser) {
   window.getJSONP = getJSONP;
   window.getJSON = getJSON;
 }
@@ -257,8 +255,7 @@ module.exports = {
 
 
 
-}).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"request-promise":undefined,"request-promise/errors":undefined}],3:[function(require,module,exports){
+},{"./utils":13,"request-promise":undefined,"request-promise/errors":undefined}],3:[function(require,module,exports){
 var Config, ajax, events, utils;
 
 events = require('./events');
@@ -286,9 +283,10 @@ Config = (function() {
         return events.trigger(self.id, Config.EVENT_READY);
       });
       xhr.fail(function() {
-        console.log('Error: não foi possível carregar configuração da visualização');
         return events.trigger(self.id, Config.EVENT_FAIL, 'Error: não foi possível carregar configuração da visualização');
       });
+    } else {
+      events.trigger(self.id, Config.EVENT_READY);
     }
   }
 
@@ -631,8 +629,7 @@ module.exports = {
 
 
 },{"./ajax":2,"./events":8,"./utils":13}],6:[function(require,module,exports){
-(function (process){
-var DataSource, DataSourceCSV, ajax, csvParse,
+var DataSource, DataSourceCSV, ajax, csvParse, isRunningOnBrowser,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
 
@@ -640,7 +637,9 @@ DataSource = require('./datasource').DataSource;
 
 ajax = require('./ajax');
 
-if (typeof process.browser === 'undefined') {
+isRunningOnBrowser = require('./utils').isRunningOnBrowser;
+
+if (!isRunningOnBrowser) {
   csvParse = require('babyparse');
   DataSourceCSV = (function(superClass) {
     extend(DataSourceCSV, superClass);
@@ -708,19 +707,17 @@ module.exports = {
 
 
 
-}).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"./ajax":2,"./datasource":5,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"babyparse":undefined}],7:[function(require,module,exports){
-(function (process){
-var CLIENT_SIDE, DataSource, DataSourceGoogle, TABLETOP,
+},{"./ajax":2,"./datasource":5,"./utils":13,"babyparse":undefined}],7:[function(require,module,exports){
+var DataSource, DataSourceGoogle, TABLETOP, isRunningOnBrowser,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
 
-if (typeof process.browser === 'undefined') {
-  CLIENT_SIDE = false;
+isRunningOnBrowser = require('./utils').isRunningOnBrowser;
+
+if (!isRunningOnBrowser) {
   TABLETOP = require('tabletop');
 } else {
   TABLETOP = Tabletop;
-  CLIENT_SIDE = true;
 }
 
 DataSource = require('./datasource').DataSource;
@@ -754,14 +751,14 @@ module.exports = {
 
 
 
-}).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"./datasource":5,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"tabletop":undefined}],8:[function(require,module,exports){
-(function (process){
-var bind, emitter, emitters, events, select, trigger, unbind;
+},{"./datasource":5,"./utils":13,"tabletop":undefined}],8:[function(require,module,exports){
+var bind, emitter, emitters, events, isRunningOnBrowser, select, trigger, unbind;
 
 emitter = null;
 
-if (typeof process.browser === 'undefined') {
+isRunningOnBrowser = require('./utils').isRunningOnBrowser;
+
+if (!isRunningOnBrowser) {
   events = require('events');
   emitters = {};
   select = function(id) {
@@ -810,8 +807,7 @@ module.exports = {
 
 
 
-}).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"events":undefined}],9:[function(require,module,exports){
+},{"./utils":13,"events":undefined}],9:[function(require,module,exports){
 var Notebook, ajax;
 
 ajax = require('./ajax');
@@ -989,8 +985,9 @@ module.exports = {
 
 
 },{"./ajax":2,"./events":8}],11:[function(require,module,exports){
-(function (process){
-var Config, Notebook, SLSAPI, User, ajax, dataPool, events, notes;
+var Config, Notebook, SLSAPI, User, ajax, dataPool, events, isRunningOnBrowser, notes;
+
+isRunningOnBrowser = require('./utils').isRunningOnBrowser;
 
 events = require('./events');
 
@@ -1040,7 +1037,7 @@ SLSAPI.dataPool = dataPool;
 
 SLSAPI.ajax = ajax;
 
-if (typeof process.browser !== 'undefined') {
+if (isRunningOnBrowser) {
   window.SLSAPI = SLSAPI;
 }
 
@@ -1048,8 +1045,7 @@ module.exports = SLSAPI;
 
 
 
-}).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"./ajax":2,"./config":3,"./datapool":4,"./events":8,"./notebook":9,"./notes":10,"./user":12,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1}],12:[function(require,module,exports){
+},{"./ajax":2,"./config":3,"./datapool":4,"./events":8,"./notebook":9,"./notes":10,"./user":12,"./utils":13}],12:[function(require,module,exports){
 (function (process){
 var CLIENT_SIDE, LocalStorage, User, ajax, events, localStorage, md5,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -1254,7 +1250,8 @@ module.exports = {
   string2function: string2function,
   getURLParameter: getURLParameter,
   md5: md5,
-  dms2decPTBR: dms2decPTBR
+  dms2decPTBR: dms2decPTBR,
+  isRunningOnBrowser: CLIENT_SIDE
 };
 
 

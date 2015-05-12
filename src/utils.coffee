@@ -76,7 +76,8 @@ module.exports = {
     string2function: string2function
     getURLParameter: getURLParameter
     md5: md5
-    dms2decPTBR:dms2decPTBR
+    dms2decPTBR: dms2decPTBR
+    isRunningOnBrowser: CLIENT_SIDE
   }
 # vim: set ts=2 sw=2 sts=2 expandtab:
 

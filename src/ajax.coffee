@@ -1,10 +1,9 @@
-if typeof process.browser == 'undefined' 
+isRunningOnBrowser = require('./utils').isRunningOnBrowser
+
+if not isRunningOnBrowser
   requestPromise = require('request-promise')
   errors = require('request-promise/errors')
   requestPromise.defaults({jar: true})
-  CLIENT_SIDE = false
-else
-  CLIENT_SIDE = true
   
 
 class Ajax
@@ -12,7 +11,7 @@ class Ajax
   constructor: ()->
     @xhr = null
     @parseJson = true
-    if CLIENT_SIDE
+    if isRunningOnBrowser
       $.ajaxSetup({
         crossDomain: true,
         xhrFields: {
@@ -21,14 +20,14 @@ class Ajax
       })
 
   get: (params)->
-    if CLIENT_SIDE
+    if isRunningOnBrowser
       @xhr = $.get params
     else
       @xhr = requestPromise.get params
     return @
 
   post: (params)->
-    if CLIENT_SIDE
+    if isRunningOnBrowser
       if "data" of params
         @xhr = $.post params['url'], params['data']
       else
@@ -41,7 +40,7 @@ class Ajax
     return @
 
   delete: (params)->
-    if CLIENT_SIDE
+    if isRunningOnBrowser
       params.type = "DELETE"
       params.crossDomains = true
       @xhr = $.ajax params
@@ -51,7 +50,7 @@ class Ajax
 
   done: (cb)->
     self = @
-    if CLIENT_SIDE
+    if isRunningOnBrowser
       @xhr.done(cb)
     else
       cb2 = (data) -> 
@@ -61,7 +60,7 @@ class Ajax
       @xhr.then(cb2,()->) # XXX: passando funcao anonima para evitar levantamento de exceções no .catch devido as promessas
 
   fail: (cb)->
-    if CLIENT_SIDE
+    if isRunningOnBrowser
       cb2 = (jq)->
         body = jq.responseJSON or jq.responseText
         statusCode = jq.status
@@ -103,7 +102,7 @@ getJSON = (url,func)->
 
 
 # exportando funções para acesso externo
-if CLIENT_SIDE
+if isRunningOnBrowser
   window.getJSONP = getJSONP
   window.getJSON = getJSON
 

@@ -20,8 +20,9 @@ class Config
         self.parseOpcoes(opcoes)
         events.trigger(self.id,Config.EVENT_READY)
       xhr.fail ()->
-        console.log('Error: não foi possível carregar configuração da visualização')
         events.trigger(self.id,Config.EVENT_FAIL,'Error: não foi possível carregar configuração da visualização')
+    else
+        events.trigger(self.id,Config.EVENT_READY)
 
 
   parseOpcoes: (opcoes,view)->

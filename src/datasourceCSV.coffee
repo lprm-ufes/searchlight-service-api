@@ -1,8 +1,8 @@
 DataSource = require('./datasource').DataSource
 ajax = require './ajax'
 
-
-if typeof process.browser == 'undefined'
+isRunningOnBrowser = require('./utils').isRunningOnBrowser
+if not isRunningOnBrowser
   # Serverside definitions
   csvParse = require('babyparse')
 

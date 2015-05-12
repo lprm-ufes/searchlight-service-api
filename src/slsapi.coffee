@@ -1,3 +1,4 @@
+isRunningOnBrowser = require('./utils').isRunningOnBrowser
 events = require('./events')
 ajax = require('./ajax')
 notes = require('./notes')
@@ -33,7 +34,7 @@ SLSAPI.dataPool = dataPool
 SLSAPI.ajax = ajax
 
 
-if typeof process.browser!= 'undefined'
+if isRunningOnBrowser
   window.SLSAPI = SLSAPI
 
 module.exports = SLSAPI

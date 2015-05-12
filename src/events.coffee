@@ -1,5 +1,7 @@
 emitter= null
-if typeof process.browser == 'undefined' 
+
+isRunningOnBrowser = require('./utils').isRunningOnBrowser
+if not isRunningOnBrowser
   # define serveside functions
   events = require('events')
 
@@ -16,7 +18,7 @@ if typeof process.browser == 'undefined'
   bind = (id,event,cb) ->
     select(id).once(event,cb)
 
-  unbind = (id,event,cb)->
+  unbind = (id,event,cb) ->
     
 
 else
@@ -38,8 +40,6 @@ else
 
   unbind = (id,event,cb) ->
     select(id).off(event)
-
-
 
 
 module.exports = {trigger:trigger, on:bind, off:unbind}

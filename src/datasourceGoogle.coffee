@@ -1,9 +1,9 @@
-if typeof process.browser == 'undefined' 
-  CLIENT_SIDE = false
+
+isRunningOnBrowser = require('./utils').isRunningOnBrowser
+if not isRunningOnBrowser
   TABLETOP = require('tabletop')
 else
   TABLETOP = Tabletop
-  CLIENT_SIDE = true
 
 DataSource = require('./datasource').DataSource
 
