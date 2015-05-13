@@ -22,7 +22,7 @@ class Config
       xhr.fail (err)->
         events.trigger(self.id,Config.EVENT_FAIL,{err:err,message:'Error: não foi possível carregar configuração da visualização'})
     else
-        events.trigger(self.id,Config.EVENT_READY)
+        setTimeout((()->events.trigger(self.id,Config.EVENT_READY)),5)
 
 
   parseOpcoes: (opcoes,view)->

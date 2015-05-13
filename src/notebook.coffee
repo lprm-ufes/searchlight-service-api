@@ -13,15 +13,15 @@ class Notebook
   getByName: (notebookName,callback,callbackFail=null)->
     url = "#{@config.notebookURL}?name=#{notebookName}"
     xhr = ajax.get url
-    xhr.done(callback)
-    xhr.fail(callbackFail)
+    xhr.done((res)->callback(res.body))
+    xhr.fail((err)->callbackFail(err))
 
 
   getById: (notebookId,callback,callbackFail=null)->
     url = "#{@config.notebookURL}?id=#{notebookId}"
     xhr = ajax.get url
-    xhr.done(callback)
-    xhr.fail(callbackFail)
+    xhr.done((res)->callback(res.body))
+    xhr.fail((err)->callbackFail(err))
 
 module.exports = {'Notebook': Notebook} 
 

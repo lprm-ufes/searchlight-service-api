@@ -115,16 +115,91 @@ test = (SLSAPI)->
             console.log err
           )
 
-      it 'should update a note', ->
-        0.should.to.be.null
+      it 'should update a note', (done) ->
+        changes = { categoria:'update'}
+        ok = (res)->
+          api.notes.getByQuery("id="+noteAdded
+            ,(res)->
+              if res.categoria == 'update'
+                done()
+            ,(err)->
+              console.log(err))
+        fail = (err) -> console.log err.response
+        api.notes.update(noteAdded,changes,ok,fail)
+
       it 'should allow to del note owned by logged user', (done)->
         api.notes.delete(noteAdded,(res)->
           if res.body.id
             done()
           else
-            console.log 'ai',res.body
+            console.log res.body
           )
         
+    describe "Notebook", ->
+      api =null
+      notebookid=0
+
+      before (done)->
+        conf = {}
+        api = new SLSAPI(conf)
+        api.on SLSAPI.Config.EVENT_READY, (id)->
+          done()
+
+      it 'should get notebook by name', (done)->
+        ok = (notebook) ->
+          if notebook[0].name == 'mapas'
+            notebookid = notebook[0].id
+            done()
+        api.notebook.getByName('mapas', ok,(err)->console.log err.response)
+
+      it 'should get notebook by id', (done)->
+        ok = (notebook) ->
+          if notebook.id == notebookid
+            done()
+        api.notebook.getById(notebookid, ok,(err)->console.log err.response)
+
+    describe 'DataPool', ->
+      before (done)->
+        conf = {}
+        api = new SLSAPI(conf)
+        api.on SLSAPI.Config.EVENT_READY, (id)->
+          done()
+
+
+      describe 'DataSourceGoogle', ->
+        it 'should load a spreadsheet from google drive with 5 valid elements', (done)->
+          configGoogle = {
+            dataSources: [
+                url: 'https://docs.google.com/spreadsheet/pub?key=0AhU-mW4ERuT5dHBRcGF5eml1aGhnTzl0RXh3MHdVakE&single=true&gid=0&output=html'
+                func_code: 'function (item) {\n return item;\n }'
+            ]
+          }
+          api.config.parseOpcoes(configGoogle,true)
+          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool.loadAllData()
+          api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
+            datapool.dataSources[0].notes.length.should.equal(5)
+            done()
+          )
+
+      describe 'DataSourceCSV', ->
+        it 'should load a CSV file with 14472 valid elements', (done)->
+          @timeout( 100000)
+          configCSV =
+            dataSources: [
+              url: 'http://wancharle.com.br/sl/PAC_2014_04.csv',
+              func_code: "function convert_item_pac(item){\n        item_convertido = {}\n        //console.log('1');\n        //console.log(item_convertido);\n        if ((item.val_lat) && (item.val_long)&&(item.val_lat.length > 0) && (item.val_long.length > 0)){\n        latlog = dms2decPTBR(item.val_lat,item.val_long)\n        //if (isNaN(latlog[0]) || isNaN(latlog[1])){\n        //    return null;\n      //  }\n        item_convertido.longitude = \"\"+latlog[1]\n        item_convertido.latitude = \"\" +latlog[0]\n        item_convertido.texto = item.dsc_titulo\n        item_convertido.cat = item.idn_estagio+\"%\";\n         }else{\n             return null;\n             }\n        //console.log(item_convertido);\n        //item_convertido.cat = item.cause.category_name\n        //item_convertido.icon = Icones[item_convertido.cat_id]\n        return item_convertido \n    }"
+            ]
+          api.config.parseOpcoes(configCSV,true)
+          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool.loadAllData()
+
+          api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
+          
+            datapool.dataSources[0].notes.length.should.equal(14472)
+            done()
+          )
+
 
 
 if typeof process.browser != 'undefined'

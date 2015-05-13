@@ -102,18 +102,21 @@ if (!isRunningOnBrowser) {
 }
 
 Ajax = (function() {
-  function Ajax() {
+  function Ajax(buffer) {
     this.xhr = null;
-    this.parseJson = true;
     this.donecb = null;
     this.failcb = null;
     this.request = request;
+    this.buffer = buffer;
   }
 
   Ajax.prototype.get = function(params) {
     this.xhr = this.request.get(params);
     if (isRunningOnBrowser) {
       this.xhr.withCredentials();
+    }
+    if (this.buffer) {
+      this.xhr.buffer();
     }
     this.xhr.end((function(_this) {
       return function(err, res) {
@@ -173,8 +176,11 @@ Ajax = (function() {
 
 })();
 
-get = function(params) {
-  return new Ajax().get(params);
+get = function(params, buffer) {
+  if (buffer == null) {
+    buffer = false;
+  }
+  return new Ajax(buffer).get(params);
 };
 
 post = function(params) {
@@ -264,7 +270,9 @@ Config = (function() {
         });
       });
     } else {
-      events.trigger(self.id, Config.EVENT_READY);
+      setTimeout((function() {
+        return events.trigger(self.id, Config.EVENT_READY);
+      }), 5);
     }
   }
 
@@ -628,12 +636,11 @@ if (!isRunningOnBrowser) {
 
     DataSourceCSV.prototype.loadData = function(config) {
       var xhr;
-      xhr = ajax.get(this.url);
-      xhr.parseJson = false;
+      xhr = ajax.get(this.url, true);
       xhr.done((function(_this) {
-        return function(body) {
+        return function(res) {
           var json, parsed;
-          parsed = csvParse.parse(body, {
+          parsed = csvParse.parse(res.text, {
             header: true
           });
           json = parsed.data;
@@ -809,8 +816,12 @@ Notebook = (function() {
     }
     url = this.config.notebookURL + "?name=" + notebookName;
     xhr = ajax.get(url);
-    xhr.done(callback);
-    return xhr.fail(callbackFail);
+    xhr.done(function(res) {
+      return callback(res.body);
+    });
+    return xhr.fail(function(err) {
+      return callbackFail(err);
+    });
   };
 
   Notebook.prototype.getById = function(notebookId, callback, callbackFail) {
@@ -820,8 +831,12 @@ Notebook = (function() {
     }
     url = this.config.notebookURL + "?id=" + notebookId;
     xhr = ajax.get(url);
-    xhr.done(callback);
-    return xhr.fail(callbackFail);
+    xhr.done(function(res) {
+      return callback(res.body);
+    });
+    return xhr.fail(function(err) {
+      return callbackFail(err);
+    });
   };
 
   return Notebook;
@@ -887,12 +902,15 @@ Notes = (function() {
 
   Notes.prototype.update = function(note_id, queryparams, callback, callback_fail) {
     var xhr;
-    xhr = ajax.post(this.config.notesURL + "update/" + note_id + "/", queryparams);
-    xhr.done(function(data) {
-      return callback(data);
+    xhr = ajax.post({
+      url: this.config.notesURL + "update/" + note_id + "/",
+      data: queryparams
     });
-    return xhr.fail(function() {
-      return callback_fail();
+    xhr.done(function(res) {
+      return callback(res.body);
+    });
+    return xhr.fail(function(err) {
+      return callback_fail(err);
     });
   };
 

@@ -28,9 +28,9 @@ class Notes
     xhr.fail( (err) -> callback_fail(err))
 
   update: (note_id,queryparams,callback,callback_fail)->
-    xhr = ajax.post("#{@config.notesURL}update/#{note_id}/",queryparams)
-    xhr.done( (data)-> callback(data))
-    xhr.fail( () -> callback_fail())
+    xhr = ajax.post({url:"#{@config.notesURL}update/#{note_id}/",data:queryparams})
+    xhr.done( (res)-> callback(res.body))
+    xhr.fail( (err) -> callback_fail(err))
 
   delete: (note_id,callback)->
     url ="#{@config.notesURL}#{note_id}"

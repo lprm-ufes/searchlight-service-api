@@ -5,17 +5,21 @@ if not isRunningOnBrowser
 
 class Ajax
 
-  constructor: ()->
+  constructor: (buffer)->
     @xhr = null
-    @parseJson = true
     @donecb = null
     @failcb = null
     @request = request
+    @buffer = buffer
 
   get: (params)->
     @xhr = @request.get(params)
     if isRunningOnBrowser
       @xhr.withCredentials()
+
+    if @buffer
+      @xhr.buffer()
+      
     @xhr.end((err,res)=>@end(err,res))
     return @
 
@@ -48,8 +52,8 @@ class Ajax
   fail: (cb)->
     @failcb = cb
       
-get = (params)->
-  return new Ajax().get(params)
+get = (params,buffer = false)->
+  return new Ajax(buffer).get(params)
 post = (params)->
   return new Ajax().post(params)
 del = (params)->
