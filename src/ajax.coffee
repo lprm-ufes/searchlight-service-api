@@ -1,78 +1,52 @@
 isRunningOnBrowser = require('./utils').isRunningOnBrowser
-
+request = require('superagent')
 if not isRunningOnBrowser
-  requestPromise = require('request-promise')
-  errors = require('request-promise/errors')
-  requestPromise.defaults({jar: true})
-  
+  request = request.agent() # para cookies
 
 class Ajax
 
   constructor: ()->
     @xhr = null
     @parseJson = true
-    if isRunningOnBrowser
-      $.ajaxSetup({
-        crossDomain: true,
-        xhrFields: {
-          withCredentials: true
-        },
-      })
+    @donecb = null
+    @failcb = null
+    @request = request
 
   get: (params)->
+    @xhr = @request.get(params)
     if isRunningOnBrowser
-      @xhr = $.get params
-    else
-      @xhr = requestPromise.get params
+      @xhr.withCredentials()
+    @xhr.end((err,res)=>@end(err,res))
     return @
 
   post: (params)->
-    if isRunningOnBrowser
-      if "data" of params
-        @xhr = $.post params['url'], params['data']
-      else
-        @xhr = $.post params
+    if "data" of params
+      @xhr = @request.post(params['url']).send( params['data'])
     else
-      if "data" of params
-        @xhr = requestPromise.post {url:params['url'], formData:params['data']}
-      else
-        @xhr = requestPromise.post params
+      @xhr = @request.post(params)
+    if isRunningOnBrowser
+      @xhr.withCredentials()
+    @xhr.end((err,res)=>@end(err,res))
     return @
 
-  delete: (params)->
-    if isRunningOnBrowser
-      params.type = "DELETE"
-      params.crossDomains = true
-      @xhr = $.ajax params
+  end: (err,res)->
+    if err
+      @failcb(err)
     else
-      @xhr = requestPromise.del params
+      @donecb(res)
+
+  delete: (params)->
+    @xhr = @request.del params
+    if isRunningOnBrowser
+      @xhr.withCredentials()
+    @xhr.end((err,res)=>@end(err,res))
     return @
 
   done: (cb)->
-    self = @
-    if isRunningOnBrowser
-      @xhr.done(cb)
-    else
-      cb2 = (data) -> 
-        if self.parseJson
-            data = JSON.parse(data)
-        cb(data)
-      @xhr.then(cb2,()->) # XXX: passando funcao anonima para evitar levantamento de exceções no .catch devido as promessas
+    @donecb = cb
 
   fail: (cb)->
-    if isRunningOnBrowser
-      cb2 = (jq)->
-        body = jq.responseJSON or jq.responseText 
-        statusCode = jq.status
-        reason = {
-          response:
-            body: body
-            statusCode :statusCode
-        }
-        cb(reason)
-      @xhr.fail(cb2)
-    else
-      @xhr.catch(cb)
+    @failcb = cb
       
 get = (params)->
   return new Ajax().get(params)

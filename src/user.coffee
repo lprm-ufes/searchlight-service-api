@@ -74,7 +74,8 @@ class User
             username:u
             password:p
       }
-      xhr.done (json) =>
+      xhr.done (res) =>
+        json = res.body
         if json.error
           alert(json.error)
         else
@@ -83,8 +84,8 @@ class User
           events.trigger(@config.id,User.EVENT_LOGIN_SUCCESS,json)
 
         events.trigger(@config.id,User.EVENT_LOGIN_FINISH,json)
-      xhr.fail (reason) =>
-        events.trigger(@config.id,User.EVENT_LOGIN_FAIL,reason)
+      xhr.fail (err) =>
+        events.trigger(@config.id,User.EVENT_LOGIN_FAIL,err)
         
     return false
    

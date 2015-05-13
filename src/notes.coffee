@@ -2,6 +2,12 @@ ajax = require './ajax'
 events = require './events'
 
 class Notes
+  @EVENT_ADD_NOTE_START = 'note:uploadStart.slsapi'
+  @EVENT_ADD_NOTE_FINISH = 'note:uploadFinish.slsapi'
+  @EVENT_ADD_NOTE_FAIL = 'note:uploadFail.slsapi'
+  @EVENT_DEL_NOTE_FAIL = 'note:deleteFail.slsapi'
+  @EVENT_DEL_NOTE_SUCCESS = 'note:deleteSUCCESS.slsapi'
+
   @instances = {} 
 
   @getInstance: (config) ->
@@ -13,13 +19,13 @@ class Notes
 
   getByUser: (user_id,callback, callback_fail) ->
     xhr = ajax.get("#{@config.notesURL}?user=#{user_id}")
-    xhr.done( (data)-> callback(data))
-    xhr.fail( () -> callback_fail())
+    xhr.done( (res)-> callback(res.body))
+    xhr.fail( (err) -> callback_fail(err))
 
   getByQuery: (query,callback, callback_fail) ->
     xhr = ajax.get("#{@config.notesURL}?#{query}")
-    xhr.done( (data)-> callback(data))
-    xhr.fail( () -> callback_fail())
+    xhr.done( (res)-> callback(res.body))
+    xhr.fail( (err) -> callback_fail(err))
 
   update: (note_id,queryparams,callback,callback_fail)->
     xhr = ajax.post("#{@config.notesURL}update/#{note_id}/",queryparams)
@@ -27,8 +33,14 @@ class Notes
     xhr.fail( () -> callback_fail())
 
   delete: (note_id,callback)->
-    xhr = ajax.del(url: "#{@config.notesURL}#{note_id}")
-    xhr.done((data)-> callback(data))
+    url ="#{@config.notesURL}#{note_id}"
+    xhr = ajax.del url
+    if callback
+      xhr.done((data)-> callback(data))
+    else
+      xhr.done((data)=>events.trigger(@config.id,Notes.EVENT_DEL_NOTE_SUCCESS,data))
+
+    xhr.fail((err)=>events.trigger(@config.id,Notes.EVENT_DEL_NOTE_FAIL,err))
 
   enviar: (note,notebookId=null, callback_ok=(()->),callback_fail=(()->)) ->
     if not notebookId
@@ -42,7 +54,7 @@ class Notes
     params = note
     params.notebook = notebookId
 
-    events.trigger(@config.id,'slsapi.note:uploadStart')
+    events.trigger(@config.id,Notes.EVENT_ADD_NOTE_START)
     if note.fotoURI
         options = new FileUploadOptions()
         options.params = params
@@ -56,18 +68,20 @@ class Notes
           note.fotoURI,
           encodeURI(@config.createURL),
           (r) =>
-            events.trigger(@config.id,'slsapi.note:uploadFinish')
+            events.trigger(@config.id,Notes.EVENT_ADD_NOTE_FINISH)
             callback_ok(r)
           ,(error) =>
-            events.trigger(@config.id,'slsapi.note:uploadFail')
+            events.trigger(@config.id, Notes.EVENT_ADD_NOTE_FAIL)
             callback_fail(error)
           , options)
     else
-      $.post(@config.createURL, params, (json) =>
-        events.trigger(@config.id,'slsapi.note:uploadFinish')
-        callback_ok(json)
-      ,'json').fail( (error) =>
-        events.trigger(@config.id,'slsapi.note:uploadFail')
+      xhr = ajax.post({url:@config.createURL, data:params})
+      xhr.done((res) =>
+        events.trigger(@config.id,Notes.EVENT_ADD_NOTE_FINISH,res.body)
+        callback_ok(res.body)
+      )
+      xhr.fail( (error) =>
+        events.trigger(@config.id,Notes.EVENT_ADD_NOTE_FAIL,error)
         callback_fail(error)
       )
  
