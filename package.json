@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Api para utilização dos recursos do searchlight-service",
   "main": "lib/slsapi.js",
+  "browser": {
+      "lib/slsapi.js":"dist/slsapi.js"
+   },
   "scripts": {
     "test": "mocha --compilers coffee:coffee-script/register ./test/node.coffee ",
     "compile": "npm run cnode && npm run cweb && npm run csuper && npm run ctests && npm run test ",
