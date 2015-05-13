@@ -5,9 +5,10 @@
   "main": "lib/slsapi.js",
   "scripts": {
     "test": "mocha --compilers coffee:coffee-script/register ./test/node.coffee ",
-    "compile": "npm run cnode && npm run cweb && npm run ctests && npm run test",
+    "compile": "npm run cnode && npm run cweb && npm run csuper && npm run ctests && npm run test ",
     "cnode": "coffee --output lib --compile src",
-    "cweb": "browserify -s superagent --extension='.coffee'  -t coffeeify ./src/slsapi.coffee > ./dist/slsapi.js",
+    "csuper": "browserify -r superagent > ./build/superagent.js",
+    "cweb": "browserify --no-bundle-external --extension='.coffee'  -t coffeeify ./src/slsapi.coffee > ./dist/slsapi.js",
     "ctests": "browserify --extension='.coffee'  --no-bundle-external -t coffeeify ./test/test.coffee > ./dist/test.js",
     "cweb:debug": "browserify  --extension='.coffee' -d -t coffeeify ./src/slsapi.coffee > ./dist/slsapi.js"
   },
@@ -35,7 +36,6 @@
     "blueimp-md5": "^1.1.0",
     "dms2dec-ptbr": "^1.0.4",
     "node-localstorage": "^0.5.0",
-    "request-promise": "^0.4.2",
     "superagent": "^1.2.0",
     "tabletop": "^1.3.5",
     "tough-cookie": "^0.13.0"
