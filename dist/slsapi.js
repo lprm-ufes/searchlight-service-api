@@ -91,7 +91,7 @@ process.chdir = function (dir) {
 process.umask = function() { return 0; };
 
 },{}],2:[function(require,module,exports){
-var Ajax, del, get, getJSON, getJSONP, isRunningOnBrowser, post, request;
+var Ajax, del, get, isRunningOnBrowser, post, request;
 
 isRunningOnBrowser = require('./utils').isRunningOnBrowser;
 
@@ -102,12 +102,14 @@ if (!isRunningOnBrowser) {
 }
 
 Ajax = (function() {
-  function Ajax(buffer) {
+  Ajax.conf = null;
+
+  function Ajax(options) {
     this.xhr = null;
     this.donecb = null;
     this.failcb = null;
     this.request = request;
-    this.buffer = buffer;
+    this.options = options;
   }
 
   Ajax.prototype.get = function(params) {
@@ -115,8 +117,11 @@ Ajax = (function() {
     if (isRunningOnBrowser) {
       this.xhr.withCredentials();
     }
-    if (this.buffer) {
+    if (this.options && this.options.buffer) {
       this.xhr.buffer();
+    }
+    if (this.options && this.options.type) {
+      this.xhr.type(this.options.type);
     }
     this.xhr.end((function(_this) {
       return function(err, res) {
@@ -176,11 +181,8 @@ Ajax = (function() {
 
 })();
 
-get = function(params, buffer) {
-  if (buffer == null) {
-    buffer = false;
-  }
-  return new Ajax(buffer).get(params);
+get = function(params, options) {
+  return new Ajax(options).get(params);
 };
 
 post = function(params) {
@@ -191,46 +193,10 @@ del = function(params) {
   return new Ajax()["delete"](params);
 };
 
-getJSONP = function(url, func) {
-  var xhr;
-  xhr = get({
-    'url': url,
-    'type': "POST",
-    'dataType': 'jsonp'
-  });
-  xhr.done(func);
-  return xhr.fail(function(e, ee) {
-    if (ee === "error") {
-      return console.log('Erro ao baixar dados JSONP da fonte de dados\n' + url);
-    }
-  });
-};
-
-getJSON = function(url, func) {
-  var xhr;
-  xhr = get({
-    'url': url,
-    'dataType': "json",
-    'contentType': 'application/json',
-    'mimeType': "textPlain"
-  });
-  xhr.done(func);
-  return xhr.fail(function() {
-    return console.log('Erro ao baixar dados JSONP da fonte de dados\n' + url);
-  });
-};
-
-if (isRunningOnBrowser) {
-  window.getJSONP = getJSONP;
-  window.getJSON = getJSON;
-}
-
 module.exports = {
   get: get,
   post: post,
   del: del,
-  getJSON: getJSON,
-  getJSONP: getJSONP,
   Ajax: Ajax
 };
 
@@ -460,6 +426,8 @@ DataSource = (function() {
 
   DataSource.EVENT_LOAD_FAIL = 'datasourceLoadFail.slsapi';
 
+  DataSource.EVENT_REQUEST_FAIL = 'datasourceRequestFail.slsapi';
+
   function DataSource(url, func_code) {
     this.addItem = bind(this.addItem, this);
     this._getCatOrCreate = bind(this._getCatOrCreate, this);
@@ -544,6 +512,7 @@ DataSource = (function() {
   };
 
   DataSource.prototype.loadData = function(config, force) {
+    var xhr;
     if (force == null) {
       force = false;
     }
@@ -551,27 +520,25 @@ DataSource = (function() {
       this.loadFromCache(config);
       return;
     }
-    if (this.url.indexOf("docs.google.com/spreadsheet") > -1) {
-      return this.loadFromGoogle(config);
-    } else {
-      if (this.url.slice(0, 4) === "http") {
-        if (this.url.slice(-4) === ".csv") {
-          return this.loadFromCsv(config);
-        } else {
-          return ajax.getJSONP(this.url, (function(_this) {
-            return function(data) {
-              return _this.onDataLoaded(data, _this, config);
-            };
-          })(this));
+    xhr = ajax.get(this.url, {
+      type: 'json'
+    });
+    xhr.done((function(_this) {
+      return function(res) {
+        var json;
+        json = res.body;
+        if (res.type.toLowerCase().indexOf("text") > -1) {
+          json = JSON.parse(res.text);
         }
-      } else {
-        return ajax.getJSON(this.url, (function(_this) {
-          return function(data) {
-            return _this.onDataLoaded(data, _this, config);
-          };
-        })(this));
-      }
-    }
+        return _this.onDataLoaded(json, _this, config);
+      };
+    })(this));
+    return xhr.fail((function(_this) {
+      return function(err) {
+        console.log('error');
+        return events.trigger(config.id, DataSource.EVENT_REQUEST_FAIL, err);
+      };
+    })(this));
   };
 
   DataSource.prototype.onDataLoaded = function(data, fonte, config) {
@@ -636,7 +603,9 @@ if (!isRunningOnBrowser) {
 
     DataSourceCSV.prototype.loadData = function(config) {
       var xhr;
-      xhr = ajax.get(this.url, true);
+      xhr = ajax.get(this.url, {
+        buffer: true
+      });
       xhr.done((function(_this) {
         return function(res) {
           var json, parsed;

@@ -8,7 +8,7 @@ if not isRunningOnBrowser
 
   class DataSourceCSV extends DataSource
     loadData: (config)->
-      xhr= ajax.get(@url,true) # buffer = true because is a download request (octet-stream response)
+      xhr= ajax.get(@url,{buffer:true}) # buffer = true because is a download request (octet-stream response)
       xhr.done( (res) =>
         parsed = csvParse.parse(res.text,{header:true})
         json = parsed.data

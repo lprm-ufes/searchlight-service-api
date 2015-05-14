@@ -5,21 +5,26 @@ if not isRunningOnBrowser
 
 class Ajax
 
-  constructor: (buffer)->
+  constructor: (options)->
     @xhr = null
     @donecb = null
     @failcb = null
     @request = request
-    @buffer = buffer
+    @options = options
 
   get: (params)->
     @xhr = @request.get(params)
     if isRunningOnBrowser
       @xhr.withCredentials()
 
-    if @buffer
+    # used to download files of octet-stream type like .csv
+    if @options and @options.buffer
       @xhr.buffer()
-      
+
+    # set the content type of request
+    if @options and @options.type
+      @xhr.type(@options.type)
+     
     @xhr.end((err,res)=>@end(err,res))
     return @
 
@@ -52,44 +57,18 @@ class Ajax
   fail: (cb)->
     @failcb = cb
       
-get = (params,buffer = false)->
-  return new Ajax(buffer).get(params)
+get = (params,options)->
+  return new Ajax(options).get(params)
 post = (params)->
   return new Ajax().post(params)
 del = (params)->
   return new Ajax().delete(params)
 
 
-
-
-
-getJSONP = (url,func)->
-  xhr = get({ 'url': url,'type':"POST", 'dataType': 'jsonp'})
-  xhr.done(func)
-  xhr.fail((e,ee)-> 
-      if ee == "error"
-        console.log('Erro ao baixar dados JSONP da fonte de dados\n'+url)
-  )
-
-
-getJSON = (url,func)->
-  xhr = get({ 'url': url,
-  'dataType': "json",'contentType': 'application/json','mimeType': "textPlain"})
-  xhr.done(func)
-  xhr.fail(()-> console.log('Erro ao baixar dados JSONP da fonte de dados\n'+url))
-
-
-# exportando funções para acesso externo
-if isRunningOnBrowser
-  window.getJSONP = getJSONP
-  window.getJSON = getJSON
-
 module.exports = {
     get: get
     post: post
     del: del
-    getJSON: getJSON
-    getJSONP: getJSONP
 
     Ajax: Ajax
   }

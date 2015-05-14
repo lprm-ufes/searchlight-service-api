@@ -165,6 +165,49 @@ test = (SLSAPI)->
         api.on SLSAPI.Config.EVENT_READY, (id)->
           done()
 
+      describe 'DataSource', ->
+        it 'should load  data in json format from "text/plain" response', (done)->
+          @timeout( 10000)
+          conf = {
+            dataSources: [
+              url: "http://wancharle.com.br/sl/portoalegre.cc.json",
+              func_code: "function convert_item_porto(item){\n
+              item_convertido = {} ;
+              item = item['cause']\n
+              ;item_convertido.longitude = \"\"+item.longitude\n
+              ;item_convertido.latitude = \"\" +item.latitude\n
+              ;item_convertido.title = item.title\n
+              ;item_convertido.texto =item.title+\"<br>Data: \"+item.updated_at\n\t
+              ;  return item_convertido;
+              } "
+            ]
+          }
+          api.config.parseOpcoes(conf,true)
+          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool.loadAllData()
+          api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
+            datapool.dataSources[0].notes.length.should.equal(1411)
+            done()
+          )
+
+        it 'should load  data in json format from "application/json" response', (done)->
+          conf = {
+            dataSources: [
+              url:"http://sl.wancharle.com.br/note/?limit=10"
+              func_code: "function ala(item){return item}"
+            ]
+            }
+          api.config.parseOpcoes(conf,true)
+          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool.loadAllData()
+          api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
+            datapool.dataSources[0].notes.length.should.equal(10)
+            done()
+          )
+
+        #it 'should load data from cache', (done)->
+
+        
 
       describe 'DataSourceGoogle', ->
         it 'should load a spreadsheet from google drive with 5 valid elements', (done)->

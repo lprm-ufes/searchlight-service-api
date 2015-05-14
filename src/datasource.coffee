@@ -9,6 +9,7 @@ class DataSource
 
   @EVENT_LOADED = 'datasourceLoaded.slsapi'
   @EVENT_LOAD_FAIL = 'datasourceLoadFail.slsapi'
+  @EVENT_REQUEST_FAIL = 'datasourceRequestFail.slsapi'
 
   constructor: (url,func_code)->
     # process and validate the datasource
@@ -85,20 +86,15 @@ class DataSource
       @loadFromCache(config)
       return
 
-    if @url.indexOf("docs.google.com/spreadsheet") > -1 
-        @loadFromGoogle(config)
-    else
-      if @url.slice(0,4)=="http"
-        if @url.slice(-4)==".csv"
-          @loadFromCsv(config)
-        else
-          ajax.getJSONP(@url, (data)=>
-              @onDataLoaded(data,@,config)
-          )
-      else
-        ajax.getJSON(@url, (data) =>
-          @onDataLoaded(data,@,config)
-        )
+    xhr = ajax.get(@url,{type:'json'})
+    xhr.done (res)=> 
+      json = res.body
+      if res.type.toLowerCase().indexOf("text") > -1
+        json = JSON.parse(res.text)
+      @onDataLoaded(json,@,config)
+
+    xhr.fail (err)-> events.trigger(config.id,DataSource.EVENT_REQUEST_FAIL,err)
+          
 
   # callback function called on data loaded
   onDataLoaded: (data,fonte,config)->
@@ -112,7 +108,7 @@ class DataSource
       return
 
   loadFromCache: (config)->
-    # TODO: stanciar DataSource de cache em classe separada
+    # TODO: istanciar DataSource de cache em classe separada
     ajax.getJSON("#{config.urlsls}/note/listaExternal?noteid=#{config.noteid}&fonteIndex=#{i}", (data)=>
               fonte2 ={ url:@url,func_code: (i)-> return i}           
               @onDataLoaded(data,fonte2)
