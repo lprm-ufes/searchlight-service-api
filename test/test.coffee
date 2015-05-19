@@ -205,13 +205,49 @@ test = (SLSAPI)->
             done()
           )
 
-        #it 'should load data from cache', (done)->
-
+        it 'should load data from especific data source only', (done)->
+          conf = {
+            dataSources: [
+              {url:"http://sl.wancharle.com.br/note/?limit=10", func_code: "function ala(item){return item}"},
+              {url: "http://wancharle.com.br/sl/portoalegre.cc.json", func_code: "function convert_item_porto(item){\n
+              item_convertido = {} ; item = item['cause']\n  ;item_convertido.longitude = \"\"+item.longitude\n
+              ;item_convertido.latitude = \"\" +item.latitude\n ;item_convertido.title = item.title\n
+              ;item_convertido.texto =item.title+\"<br>Data: \"+item.updated_at\n\t ;  return item_convertido;
+              } "}
+            ]
+            }
+          api.config.parseOpcoes(conf,true)
+          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool.loadOneData(1)
+          api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
+            datapool.dataSources[1].notes.length.should.equal(1411)
+            done()
+          )
         
+
+        it 'should load data from cache', (done)->
+          @timeout(10000)
+          conf = {
+            usarCache:true
+            noteid:true
+            dataSources: [
+              url:"http://sl.wancharle.com.br/note/?limit=10"
+              func_code: "function ala(item){return item}"
+            ]
+            }
+          api.config.parseOpcoes(conf,true)
+          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool.loadAllData()
+          api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
+            datapool.dataSources[0].notes.length.should.equal(1000)
+            done()
+          )
+
 
       describe 'DataSourceGoogle', ->
         it 'should load a spreadsheet from google drive with 5 valid elements', (done)->
           configGoogle = {
+            usarCache:false # necessario para apagar a conf do test anterior
             dataSources: [
                 url: 'https://docs.google.com/spreadsheet/pub?key=0AhU-mW4ERuT5dHBRcGF5eml1aGhnTzl0RXh3MHdVakE&single=true&gid=0&output=html'
                 func_code: 'function (item) {\n return item;\n }'

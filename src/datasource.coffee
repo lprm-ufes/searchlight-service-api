@@ -10,8 +10,10 @@ class DataSource
   @EVENT_LOADED = 'datasourceLoaded.slsapi'
   @EVENT_LOAD_FAIL = 'datasourceLoadFail.slsapi'
   @EVENT_REQUEST_FAIL = 'datasourceRequestFail.slsapi'
+  
 
-  constructor: (url,func_code)->
+  constructor: (url,func_code,i)->
+    @index = i
     # process and validate the datasource
     @valid = true
     if url and typeof func_code is 'function'
@@ -34,6 +36,7 @@ class DataSource
     @notesChildren = {}
     @categories = {}
     @categories_id = {}
+    @cachedSource = {url: url, func_code: (i)-> return i}
 
   # check if the data source is valid
   isValid: ->
@@ -80,12 +83,17 @@ class DataSource
       @notesChildren[parentId] = [ ]
     @notesChildren[parentId].push(child)
 
-  # load data to dataSource from the datasource.url
-  loadData: (config,force=false) ->
+  load: (config,force="") ->
     if config.usarCache and config.noteid
-      @loadFromCache(config)
-      return
+      if @cachedURL
+        @loadFromCache(config)
+      else
+        @getCachedURL(config,force,()=>@loadFromCache(config))
+    else
+      @loadData(config)
 
+  # load data to dataSource from the datasource.url
+  loadData: (config) ->
     xhr = ajax.get(@url,{type:'json'})
     xhr.done (res)=> 
       json = res.body
@@ -94,7 +102,30 @@ class DataSource
       @onDataLoaded(json,@,config)
 
     xhr.fail (err)-> events.trigger(config.id,DataSource.EVENT_REQUEST_FAIL,err)
-          
+ 
+  loadFromCache: (config)->
+    url ="#{@cachedURL}&limit=1000 "
+    xhr = ajax.get(url,{type:'json'})
+    xhr.done (res)=>
+      json = res.body
+      if res.type.toLowerCase().indexOf("text") > -1
+        json = JSON.parse(res.text)
+      @onDataLoaded(json,@cachedSource,config)
+
+    xhr.fail (err)-> events.trigger(config.id,DataSource.EVENT_REQUEST_FAIL,err)
+   
+
+         
+  # Gets a cached url for that datasource                                                                                                           
+  # Data from original url is imported to server who offers a cached version with option to filtering 
+  getCachedURL: (config,forceImport="",cb)->
+    url ="#{config.serverURL}/note/getCachedURL?noteid=#{config.noteid}&fonteIndex=#{@index}&forceImport=#{forceImport}"
+    xhr = ajax.get(url,{type:'json'})
+    xhr.done (res)=>
+          @cachedURL = res.body.cachedUrl
+          cb()
+    xhr.fail (err)=>
+        console.log(err)
 
   # callback function called on data loaded
   onDataLoaded: (data,fonte,config)->
@@ -106,13 +137,6 @@ class DataSource
       console.error(e.toString())
       events.trigger(config.id,DataSource.EVENT_LOAD_FAIL)
       return
-
-  loadFromCache: (config)->
-    # TODO: istanciar DataSource de cache em classe separada
-    ajax.getJSON("#{config.urlsls}/note/listaExternal?noteid=#{config.noteid}&fonteIndex=#{i}", (data)=>
-              fonte2 ={ url:@url,func_code: (i)-> return i}           
-              @onDataLoaded(data,fonte2)
-    )
 
    
 module.exports = {DataSource:DataSource}

@@ -15,6 +15,7 @@ class Config
 
     @parseOpcoes(opcoes)
     if opcoes.urlConfServico
+      # merge with confservice if have urlConfService coletor
       xhr = ajax.get opcoes.urlConfServico
       xhr.done (res) ->
         self.parseOpcoes(res.body)
@@ -37,6 +38,9 @@ class Config
     if not view
       @coletorNotebookId = @opcoes.get 'id', ''
 
+
+    @usarCache = @opcoes.get 'usarCache', @usarCache or false
+    @noteid = @opcoes.get 'noteid', @noteid or false
 
 module.exports={'Config':Config }
 

@@ -102,8 +102,6 @@ if (!isRunningOnBrowser) {
 }
 
 Ajax = (function() {
-  Ajax.conf = null;
-
   function Ajax(options) {
     this.xhr = null;
     this.donecb = null;
@@ -252,8 +250,10 @@ Config = (function() {
     this.notebookURL = this.opcoes.get('notebookURL', this.notebookURL || (this.serverURL + "/notebook/"));
     this.dataSources = this.opcoes.get('dataSources', this.dataSources || []);
     if (!view) {
-      return this.coletorNotebookId = this.opcoes.get('id', '');
+      this.coletorNotebookId = this.opcoes.get('id', '');
     }
+    this.usarCache = this.opcoes.get('usarCache', this.usarCache || false);
+    return this.noteid = this.opcoes.get('noteid', this.noteid || false);
   };
 
   return Config;
@@ -278,14 +278,14 @@ DataSourceGoogle = require('./datasourceGoogle').DataSourceGoogle;
 
 DataSourceCSV = require('./datasourceCSV').DataSourceCSV;
 
-createDataSource = function(url, functionCode) {
+createDataSource = function(url, functionCode, i) {
   if (url.indexOf("docs.google.com/spreadsheet") > -1) {
-    return new DataSourceGoogle(url, functionCode);
+    return new DataSourceGoogle(url, functionCode, i);
   } else {
     if (url.slice(-4) === ".csv") {
-      return new DataSourceCSV(url, functionCode);
+      return new DataSourceCSV(url, functionCode, i);
     } else {
-      return new DataSource(url, functionCode);
+      return new DataSource(url, functionCode, i);
     }
   }
 };
@@ -335,7 +335,7 @@ DataPool = (function() {
 
   DataPool.prototype.addDataSource = function(s) {
     var source;
-    source = createDataSource(s.url, s.func_code);
+    source = createDataSource(s.url, s.func_code, this.dataSources.length);
     if (source.isValid()) {
       return this.dataSources.push(source);
     }
@@ -357,16 +357,27 @@ DataPool = (function() {
     return this.dataSources[i];
   };
 
-  DataPool.prototype.loadAllData = function() {
-    var i, j, len, obj, ref, results, source;
-    obj = this;
+  DataPool.prototype.loadOneData = function(fonteIndex, force) {
+    if (force == null) {
+      force = "";
+    }
+    this.loadingOneData = true;
+    events.trigger(this.config.id, DataPool.EVENT_LOAD_START);
+    return this.dataSources[fonteIndex].load(this.config, force);
+  };
+
+  DataPool.prototype.loadAllData = function(force) {
+    var i, j, len, ref, results, source;
+    if (force == null) {
+      force = "";
+    }
     this.sourcesLoaded = 0;
     events.trigger(this.config.id, DataPool.EVENT_LOAD_START);
     ref = this.dataSources;
     results = [];
     for (i = j = 0, len = ref.length; j < len; i = ++j) {
       source = ref[i];
-      results.push(source.loadData(this.config, false));
+      results.push(source.load(this.config, force));
     }
     return results;
   };
@@ -384,9 +395,14 @@ DataPool = (function() {
   };
 
   DataPool.prototype.onDataSourceLoaded = function() {
-    this.sourcesLoaded += 1;
-    if (this.sourcesLoaded === this.dataSources.length) {
-      return events.trigger(this.config.id, DataPool.EVENT_LOAD_STOP, this);
+    if (this.loadingOneData) {
+      this.loadingOneData = false;
+      events.trigger(this.config.id, DataPool.EVENT_LOAD_STOP, this);
+    } else {
+      this.sourcesLoaded += 1;
+      if (this.sourcesLoaded === this.dataSources.length) {
+        return events.trigger(this.config.id, DataPool.EVENT_LOAD_STOP, this);
+      }
     }
   };
 
@@ -428,10 +444,11 @@ DataSource = (function() {
 
   DataSource.EVENT_REQUEST_FAIL = 'datasourceRequestFail.slsapi';
 
-  function DataSource(url, func_code) {
+  function DataSource(url, func_code, i) {
     this.addItem = bind(this.addItem, this);
     this._getCatOrCreate = bind(this._getCatOrCreate, this);
     var e;
+    this.index = i;
     this.valid = true;
     if (url && typeof func_code === 'function') {
       this.url = url;
@@ -458,6 +475,12 @@ DataSource = (function() {
     this.notesChildren = {};
     this.categories = {};
     this.categories_id = {};
+    this.cachedSource = {
+      url: url,
+      func_code: function(i) {
+        return i;
+      }
+    };
   }
 
   DataSource.prototype.isValid = function() {
@@ -511,15 +534,27 @@ DataSource = (function() {
     return this.notesChildren[parentId].push(child);
   };
 
-  DataSource.prototype.loadData = function(config, force) {
-    var xhr;
+  DataSource.prototype.load = function(config, force) {
     if (force == null) {
-      force = false;
+      force = "";
     }
     if (config.usarCache && config.noteid) {
-      this.loadFromCache(config);
-      return;
+      if (this.cachedURL) {
+        return this.loadFromCache(config);
+      } else {
+        return this.getCachedURL(config, force, (function(_this) {
+          return function() {
+            return _this.loadFromCache(config);
+          };
+        })(this));
+      }
+    } else {
+      return this.loadData(config);
     }
+  };
+
+  DataSource.prototype.loadData = function(config) {
+    var xhr;
     xhr = ajax.get(this.url, {
       type: 'json'
     });
@@ -533,10 +568,50 @@ DataSource = (function() {
         return _this.onDataLoaded(json, _this, config);
       };
     })(this));
+    return xhr.fail(function(err) {
+      return events.trigger(config.id, DataSource.EVENT_REQUEST_FAIL, err);
+    });
+  };
+
+  DataSource.prototype.loadFromCache = function(config) {
+    var url, xhr;
+    url = this.cachedURL + "&limit=1000 ";
+    xhr = ajax.get(url, {
+      type: 'json'
+    });
+    xhr.done((function(_this) {
+      return function(res) {
+        var json;
+        json = res.body;
+        if (res.type.toLowerCase().indexOf("text") > -1) {
+          json = JSON.parse(res.text);
+        }
+        return _this.onDataLoaded(json, _this.cachedSource, config);
+      };
+    })(this));
+    return xhr.fail(function(err) {
+      return events.trigger(config.id, DataSource.EVENT_REQUEST_FAIL, err);
+    });
+  };
+
+  DataSource.prototype.getCachedURL = function(config, forceImport, cb) {
+    var url, xhr;
+    if (forceImport == null) {
+      forceImport = "";
+    }
+    url = config.serverURL + "/note/getCachedURL?noteid=" + config.noteid + "&fonteIndex=" + this.index + "&forceImport=" + forceImport;
+    xhr = ajax.get(url, {
+      type: 'json'
+    });
+    xhr.done((function(_this) {
+      return function(res) {
+        _this.cachedURL = res.body.cachedUrl;
+        return cb();
+      };
+    })(this));
     return xhr.fail((function(_this) {
       return function(err) {
-        console.log('error');
-        return events.trigger(config.id, DataSource.EVENT_REQUEST_FAIL, err);
+        return console.log(err);
       };
     })(this));
   };
@@ -554,21 +629,6 @@ DataSource = (function() {
       console.error(e.toString());
       events.trigger(config.id, DataSource.EVENT_LOAD_FAIL);
     }
-  };
-
-  DataSource.prototype.loadFromCache = function(config) {
-    return ajax.getJSON(config.urlsls + "/note/listaExternal?noteid=" + config.noteid + "&fonteIndex=" + i, (function(_this) {
-      return function(data) {
-        var fonte2;
-        fonte2 = {
-          url: _this.url,
-          func_code: function(i) {
-            return i;
-          }
-        };
-        return _this.onDataLoaded(data, fonte2);
-      };
-    })(this));
   };
 
   return DataSource;

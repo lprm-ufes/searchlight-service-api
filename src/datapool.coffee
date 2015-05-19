@@ -3,14 +3,14 @@ DataSource  = require('./datasource').DataSource
 DataSourceGoogle  = require('./datasourceGoogle').DataSourceGoogle
 DataSourceCSV  = require('./datasourceCSV').DataSourceCSV
 
-createDataSource = (url,functionCode)->
+createDataSource = (url,functionCode,i)->
   if url.indexOf("docs.google.com/spreadsheet") > -1
-    return new DataSourceGoogle(url,functionCode)
+    return new DataSourceGoogle(url,functionCode,i)
   else
     if url.slice(-4)==".csv"
-      return new DataSourceCSV(url,functionCode)
+      return new DataSourceCSV(url,functionCode,i)
     else
-      return new DataSource(url,functionCode)
+      return new DataSource(url,functionCode,i)
 
 createDataPool = (config)->
   instance = DataPool.getInstance(config)
@@ -49,7 +49,7 @@ class DataPool
     )
 
   addDataSource: (s)->
-    source = createDataSource(s.url,s.func_code)
+    source = createDataSource(s.url,s.func_code,@dataSources.length)
     if source.isValid()
       @dataSources.push(source)
 
@@ -64,14 +64,19 @@ class DataPool
 
   getDataSource: (i) ->
     return @dataSources[i]
+  
+  # load one especific datasource from datasources
+  loadOneData: (fonteIndex,force="") ->
+    @loadingOneData = true
+    events.trigger(@config.id,DataPool.EVENT_LOAD_START)
+    @dataSources[fonteIndex].load(@config,force)
 
   # load all data from datasources
-  loadAllData: () =>
-    obj = this
+  loadAllData: (force="") =>
     @sourcesLoaded = 0
     events.trigger(@config.id,DataPool.EVENT_LOAD_START)
     for source, i in @dataSources
-      source.loadData(@config,false)
+      source.load(@config,force)
 
   # retorna json que será salvo na configuração deste datapool
   toJSON:() ->
@@ -82,9 +87,14 @@ class DataPool
     return array
 
   onDataSourceLoaded: ()->
-    @sourcesLoaded +=1
-    if @sourcesLoaded == @dataSources.length
+    if @loadingOneData
+      @loadingOneData = false
       events.trigger(@config.id,DataPool.EVENT_LOAD_STOP,@)
+      return
+    else
+      @sourcesLoaded +=1
+      if @sourcesLoaded == @dataSources.length
+        events.trigger(@config.id,DataPool.EVENT_LOAD_STOP,@)
 
   destroy: ->
     #unregiser all events 
