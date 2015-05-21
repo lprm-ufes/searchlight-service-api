@@ -11,6 +11,8 @@ class DataSource
   @EVENT_LOAD_FAIL = 'datasourceLoadFail.slsapi'
   @EVENT_REQUEST_FAIL = 'datasourceRequestFail.slsapi'
   
+  @hashItem:(item)->
+    return "#{parseFloat(item.latitude).toFixed(7)}#{parseFloat(item.longitude).toFixed(7)}#{utils.md5(JSON.stringify(item))}"
 
   constructor: (url,func_code,i)->
     @index = i
@@ -61,9 +63,10 @@ class DataSource
       geoItem = null
           
     if geoItem
-      # se o objeto nao tiver id um hash_id eh gerado.
+      # se o objeto nao tiver id um hashid eh gerado.
+      # mas caso tenha ele eh substitituido pelo hashid para nao gerar conflitos com os ids de armazenamento no banco
       if not geoItem.id
-       geoItem.hashid = "#{parseFloat(geoItem.latitude).toFixed(7)}#{parseFloat(geoItem.longitude).toFixed(7)}#{utils.md5(JSON.stringify(geoItem))}" 
+       geoItem.hashid = DataSource.hashItem(geoItem)
       else 
        if not geoItem.hashid
          geoItem.hashid = geoItem.id
@@ -84,7 +87,7 @@ class DataSource
     @notesChildren[parentId].push(child)
 
   load: (config,force="") ->
-    if config.usarCache and config.noteid
+    if config.noteid 
       if @cachedURL
         @loadFromCache(config)
       else

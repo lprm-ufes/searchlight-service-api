@@ -250,9 +250,8 @@ Config = (function() {
     this.notebookURL = this.opcoes.get('notebookURL', this.notebookURL || (this.serverURL + "/notebook/"));
     this.dataSources = this.opcoes.get('dataSources', this.dataSources || []);
     if (!view) {
-      this.coletorNotebookId = this.opcoes.get('id', '');
+      this.coletorNotebookId = this.opcoes.get('storageNotebook', '');
     }
-    this.usarCache = this.opcoes.get('usarCache', this.usarCache || false);
     return this.noteid = this.opcoes.get('noteid', this.noteid || false);
   };
 
@@ -444,6 +443,10 @@ DataSource = (function() {
 
   DataSource.EVENT_REQUEST_FAIL = 'datasourceRequestFail.slsapi';
 
+  DataSource.hashItem = function(item) {
+    return "" + (parseFloat(item.latitude).toFixed(7)) + (parseFloat(item.longitude).toFixed(7)) + (utils.md5(JSON.stringify(item)));
+  };
+
   function DataSource(url, func_code, i) {
     this.addItem = bind(this.addItem, this);
     this._getCatOrCreate = bind(this._getCatOrCreate, this);
@@ -510,7 +513,7 @@ DataSource = (function() {
     }
     if (geoItem) {
       if (!geoItem.id) {
-        geoItem.hashid = "" + (parseFloat(geoItem.latitude).toFixed(7)) + (parseFloat(geoItem.longitude).toFixed(7)) + (utils.md5(JSON.stringify(geoItem)));
+        geoItem.hashid = DataSource.hashItem(geoItem);
       } else {
         if (!geoItem.hashid) {
           geoItem.hashid = geoItem.id;
@@ -538,7 +541,7 @@ DataSource = (function() {
     if (force == null) {
       force = "";
     }
-    if (config.usarCache && config.noteid) {
+    if (config.noteid) {
       if (this.cachedURL) {
         return this.loadFromCache(config);
       } else {

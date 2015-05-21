@@ -36,10 +36,9 @@ class Config
     @notebookURL = @opcoes.get 'notebookURL', @notebookURL or "#{@serverURL}/notebook/"
     @dataSources = @opcoes.get 'dataSources', @dataSources or []
     if not view
-      @coletorNotebookId = @opcoes.get 'id', ''
+      @coletorNotebookId = @opcoes.get 'storageNotebook', ''
 
 
-    @usarCache = @opcoes.get 'usarCache', @usarCache or false
     @noteid = @opcoes.get 'noteid', @noteid or false
 
 module.exports={'Config':Config }

@@ -10,7 +10,7 @@ test = (SLSAPI)->
 
     describe "Config", ->
       it "should to trigger a Config.EVENT_READY for a successful configuration", (done)->
-        conf = {urlConfServico:'http://sl.wancharle.com.br/notebook/5514580391f57bdf0d0ba65b'}
+        conf = {urlConfServico:'http://sl.wancharle.com.br/note/555502050829091e5f7cf72c'}
         api = new SLSAPI(conf)
         api.on SLSAPI.Config.EVENT_READY, (id)->
           done()
@@ -22,7 +22,7 @@ test = (SLSAPI)->
           done()
 
       it "should have a coletorNotebookId after parseOpcoes with a urlConfServico option" , (done)->
-        conf = {urlConfServico:'http://sl.wancharle.com.br/notebook/5514580391f57bdf0d0ba65b'}
+        conf = {urlConfServico:'http://sl.wancharle.com.br/note/555502050829091e5f7cf72c'}
         api = new SLSAPI(conf)
         api.on SLSAPI.Config.EVENT_READY, (id)->
           api.config.coletorNotebookId.should.equal('5514580391f57bdf0d0ba65b')
@@ -31,7 +31,7 @@ test = (SLSAPI)->
     describe "User", (doneuser)->
       api =null
       before (done)->
-        conf = {urlConfServico:'http://sl.wancharle.com.br/notebook/5514580391f57bdf0d0ba65b'}
+        conf = {}
         api = new SLSAPI(conf)
         api.on SLSAPI.Config.EVENT_READY, (id)->
           done()
@@ -60,9 +60,7 @@ test = (SLSAPI)->
           (api.user.getUsuario()==null).should.to.be.true
 
         it "should to trigger User.EVENT_LOGOUT_FAIL for a failure in logout", (done)->
-          conf = {
-            logoutURL : 'http://sl.wancharle.com.br/dont/work/logout/'
-            urlConfServico:'http://sl.wancharle.com.br/notebook/5514580391f57bdf0d0ba65b'}
+          conf = {logoutURL : 'http://sl.wancharle.com.br/dont/work/logout/'}
           api2 = new SLSAPI(conf)
           api2.on SLSAPI.Config.EVENT_READY, (id)->
             api2.user.logout()
@@ -73,7 +71,7 @@ test = (SLSAPI)->
       api =null
       noteAdded = '555275afe3a4c71a6d9605b2'
       before (done)->
-        conf = {urlConfServico:'http://sl.wancharle.com.br/notebook/5514580391f57bdf0d0ba65b'}
+        conf = {urlConfServico:'http://sl.wancharle.com.br/note/555502050829091e5f7cf72c'}
         api = new SLSAPI(conf)
         api.on SLSAPI.Config.EVENT_READY, (id)->
           api.user.login('wan','123456')
@@ -228,7 +226,6 @@ test = (SLSAPI)->
         it 'should load data from cache', (done)->
           @timeout(10000)
           conf = {
-            usarCache:true
             noteid:true
             dataSources: [
               url:"http://sl.wancharle.com.br/note/?limit=10"
@@ -247,7 +244,7 @@ test = (SLSAPI)->
       describe 'DataSourceGoogle', ->
         it 'should load a spreadsheet from google drive with 5 valid elements', (done)->
           configGoogle = {
-            usarCache:false # necessario para apagar a conf do test anterior
+            noteid:false # necessario para apagar a conf do test anterior
             dataSources: [
                 url: 'https://docs.google.com/spreadsheet/pub?key=0AhU-mW4ERuT5dHBRcGF5eml1aGhnTzl0RXh3MHdVakE&single=true&gid=0&output=html'
                 func_code: 'function (item) {\n return item;\n }'
