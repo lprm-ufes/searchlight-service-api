@@ -218,7 +218,7 @@ Config = (function() {
 
   function Config(opcoes) {
     var self, xhr;
-    this.id = utils.md5(JSON.stringify(opcoes));
+    this.id = utils.md5(JSON.stringify(opcoes)) + parseInt(1000 * Math.random());
     self = this;
     this.parseOpcoes(opcoes);
     if (opcoes.urlConfServico) {
@@ -474,10 +474,7 @@ DataSource = (function() {
         this.valid = false;
       }
     }
-    this.notes = [];
-    this.notesChildren = {};
-    this.categories = {};
-    this.categories_id = {};
+    this.resetData();
     this.cachedSource = {
       url: url,
       func_code: function(i) {
@@ -485,6 +482,13 @@ DataSource = (function() {
       }
     };
   }
+
+  DataSource.prototype.resetData = function() {
+    this.notes = [];
+    this.notesChildren = {};
+    this.categories = {};
+    return this.categories_id = {};
+  };
 
   DataSource.prototype.isValid = function() {
     return this.valid;
@@ -537,11 +541,16 @@ DataSource = (function() {
     return this.notesChildren[parentId].push(child);
   };
 
+  DataSource.prototype.canLoadFromCache = function(config) {
+    return config.noteid && this.url.indexOf(config.serverURL) === -1;
+  };
+
   DataSource.prototype.load = function(config, force) {
     if (force == null) {
       force = "";
     }
-    if (config.noteid) {
+    this.resetData();
+    if (this.canLoadFromCache(config)) {
       if (this.cachedURL) {
         return this.loadFromCache(config);
       } else {
@@ -614,7 +623,11 @@ DataSource = (function() {
     })(this));
     return xhr.fail((function(_this) {
       return function(err) {
-        return console.log(err);
+        if (err.status === 400) {
+          return _this.loadData(config);
+        } else {
+          return console.log(err);
+        }
       };
     })(this));
   };
@@ -788,9 +801,19 @@ if (!isRunningOnBrowser) {
     return select(id).emit(event, param);
   };
   bind = function(id, event, cb) {
-    return select(id).once(event, cb);
+    var cb2;
+    cb2 = function(caller, params) {
+      return cb(caller, params);
+    };
+    return select(id).on(event, cb2);
   };
-  unbind = function(id, event, cb) {};
+  unbind = function(id, event, cb) {
+    if (cb) {
+      return select(id).removeListener(event, cb);
+    } else {
+      return select(id).removeAllListeners(event);
+    }
+  };
 } else {
   select = function(id) {
     var target;

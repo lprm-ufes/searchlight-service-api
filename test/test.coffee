@@ -183,11 +183,12 @@ test = (SLSAPI)->
           api.config.parseOpcoes(conf,true)
           dataPool = SLSAPI.dataPool.createDataPool(api.config)
           dataPool.loadAllData()
+          api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
             datapool.dataSources[0].notes.length.should.equal(1411)
             done()
           )
-
+          
         it 'should load  data in json format from "application/json" response', (done)->
           conf = {
             dataSources: [
@@ -198,6 +199,7 @@ test = (SLSAPI)->
           api.config.parseOpcoes(conf,true)
           dataPool = SLSAPI.dataPool.createDataPool(api.config)
           dataPool.loadAllData()
+          api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
             datapool.dataSources[0].notes.length.should.equal(10)
             done()
@@ -217,29 +219,83 @@ test = (SLSAPI)->
           api.config.parseOpcoes(conf,true)
           dataPool = SLSAPI.dataPool.createDataPool(api.config)
           dataPool.loadOneData(1)
+          api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
             datapool.dataSources[1].notes.length.should.equal(1411)
             done()
           )
         
 
-        it 'should load data from cache', (done)->
+        it 'should load data from cache with forceImport=True', (done)->
           @timeout(10000)
           conf = {
-            noteid:true
+            noteid:'55600321ea74f1fd413093b0' # noteid portoalegre.json
             dataSources: [
-              url:"http://sl.wancharle.com.br/note/?limit=10"
-              func_code: "function ala(item){return item}"
-            ]
-            }
+              url:"http://wrong/note/" # proposital wrong url to prove who load from cache ... 
+              func_code: "function (item){return null}" # proposital wrong funciton
+              ]}
           api.config.parseOpcoes(conf,true)
           dataPool = SLSAPI.dataPool.createDataPool(api.config)
-          dataPool.loadAllData()
+          dataPool.loadAllData(true) # force true 
+          api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
+          api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
+            datapool.dataSources[0].notes.length.should.equal(1000)
+            done()
+          )
+        
+        it 'should load data from cache without forceImport', (done)->
+          @timeout(10000)
+          conf = {
+            noteid:'55600321ea74f1fd413093b0' # noteid portoalegre.json
+            dataSources: [
+              url:"http://wrong/note/" # proposital wrong url to prove who load from cache ... 
+              func_code: "function (item){return null}" # proposital wrong funciton
+              ]}
+          api.config.parseOpcoes(conf,true)
+     
+          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool.loadAllData(true) # force true 
+
+          api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
             datapool.dataSources[0].notes.length.should.equal(1000)
             done()
           )
 
+        it 'should not load data from cache if it already is from a searchlight server', (done)->
+          @timeout(10000)
+          conf = {
+            noteid:'555502050829091e5f7cf72c' #notebook name = lprm_teste
+            dataSources: [
+              url:"http://sl.wancharle.com.br/note/lista?notebook=5514580391f57bdf0d0ba65b" # lprm_teste
+              func_code: "function (item){return item}"
+            ]           }
+          api.config.parseOpcoes(conf,true)
+          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool.loadAllData()
+          api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
+          api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
+            datapool.dataSources[0].notes.length.should.equal(2)
+            done()
+          )
+          
+        it 'should load data from original url if load from cache fail', (done)->
+          @timeout(10000)
+          conf = {
+            noteid:'555502050829' #notebook cache fail
+            dataSources: [
+              url: "http://wancharle.com.br/sl/portoalegre.cc.json", func_code: "function (item){\n
+              item_convertido = {} ; item = item['cause']\n  ;item_convertido.longitude = \"\"+item.longitude\n
+              ;item_convertido.latitude = \"\" +item.latitude\n; return item_convertido;
+              } "
+            ]           }
+          api.config.parseOpcoes(conf,true)
+          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool.loadAllData()
+          api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
+            datapool.dataSources[0].notes.length.should.equal(1411)
+            done()
+          )
 
       describe 'DataSourceGoogle', ->
         it 'should load a spreadsheet from google drive with 5 valid elements', (done)->

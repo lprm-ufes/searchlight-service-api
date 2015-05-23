@@ -34,12 +34,15 @@ class DataSource
         @valid = false
 
     # store the notes and cache's information
+    @resetData()
+    @cachedSource = {url: url, func_code: (i)-> return i}
+
+  resetData:->
     @notes = []
     @notesChildren = {}
     @categories = {}
     @categories_id = {}
-    @cachedSource = {url: url, func_code: (i)-> return i}
-
+ 
   # check if the data source is valid
   isValid: ->
     return @valid
@@ -86,8 +89,16 @@ class DataSource
       @notesChildren[parentId] = [ ]
     @notesChildren[parentId].push(child)
 
+  canLoadFromCache: (config)->
+
+    # if config have a noteid then config have access to a service cache
+    # and if url is not the same of cache server then the datasoruce can load from cache
+    return (config.noteid and @url.indexOf(config.serverURL)== -1)
+    
+
   load: (config,force="") ->
-    if config.noteid 
+    @resetData()
+    if @canLoadFromCache(config)
       if @cachedURL
         @loadFromCache(config)
       else
@@ -128,7 +139,10 @@ class DataSource
           @cachedURL = res.body.cachedUrl
           cb()
     xhr.fail (err)=>
-        console.log(err)
+        if err.status == 400
+          @loadData(config)
+        else
+          console.log(err)
 
   # callback function called on data loaded
   onDataLoaded: (data,fonte,config)->

@@ -16,9 +16,15 @@ if not isRunningOnBrowser
     select(id).emit(event,param)
 
   bind = (id,event,cb) ->
-    select(id).once(event,cb)
+    cb2= (caller,params)->
+      cb(caller,params)
+    select(id).on(event,cb2)
 
   unbind = (id,event,cb) ->
+    if cb
+      select(id).removeListener(event,cb)
+    else
+      select(id).removeAllListeners(event)
     
 
 else
@@ -40,6 +46,7 @@ else
 
   unbind = (id,event,cb) ->
     select(id).off(event)
+
 
 
 module.exports = {trigger:trigger, on:bind, off:unbind}

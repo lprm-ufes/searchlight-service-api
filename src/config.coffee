@@ -9,7 +9,7 @@ class Config
   @EVENT_FAIL = 'config:fail.slsapi'
 
   constructor: (opcoes)->
-    @id = utils.md5(JSON.stringify(opcoes))
+    @id = utils.md5(JSON.stringify(opcoes)) + parseInt(1000*Math.random())
 
     self = @
 
