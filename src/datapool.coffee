@@ -32,21 +32,29 @@ class DataPool
   @getInstance: (config) ->
     return @instances[config.id]
 
-  _constructor: (config) ->
-    DataPool.instances[config.id] = @
-    @config = config
-
+  parseOpcoes:(opcoes)->
+    @dataSourcesConf = opcoes.get 'dataSources', @dataSourcesConf or []
     @dataSources = []
 
     # adicionando fontes 
-    dataSources = @config.dataSources
-    for s, index in dataSources
+    for s, index in @dataSourcesConf
       @addDataSource(s)
 
     # bind counter function to count DataSources loaded
-    events.on(config.id,DataSource.EVENT_LOADED,()=>
+    events.on(@config.id,DataSource.EVENT_LOADED,()=>
         @onDataSourceLoaded()
     )
+
+  # retorna json que será salvo na configuração deste datapool
+  toJSON:() ->
+    return { 'dataSources': ds.toJSON() for ds in @dataSources}
+
+
+
+  _constructor: (config) ->
+    DataPool.instances[config.id] = @
+    @config = config
+    config.register('dataSources', @)
 
   addDataSource: (s)->
     source = createDataSource(s.url,s.func_code,@dataSources.length)
@@ -77,14 +85,6 @@ class DataPool
     events.trigger(@config.id,DataPool.EVENT_LOAD_START)
     for source, i in @dataSources
       source.load(@config,force)
-
-  # retorna json que será salvo na configuração deste datapool
-  toJSON:() ->
-    array = []
-    for f,i in @dataSources
-      f.func_code = f.func_code.toString()
-      array.push(f)
-    return array
 
   onDataSourceLoaded: ()->
     if @loadingOneData

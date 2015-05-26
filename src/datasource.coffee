@@ -43,6 +43,14 @@ class DataSource
     @categories = {}
     @categories_id = {}
  
+  toJSON:->
+    return {
+      'func_code': @func_code.toString()
+      'url':@url
+      'cachedURL': @cachedUrl
+      }
+
+
   # check if the data source is valid
   isValid: ->
     return @valid

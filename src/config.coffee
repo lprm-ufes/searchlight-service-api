@@ -11,6 +11,7 @@ class Config
   constructor: (opcoes)->
     @id = utils.md5(JSON.stringify(opcoes)) + parseInt(1000*Math.random())
 
+    @children = []
     self = @
 
     @parseOpcoes(opcoes)
@@ -34,12 +35,28 @@ class Config
     @logoutURL = @opcoes.get 'logoutURL', @logoutURL or "#{@serverURL}/user/logout/"
     @notesURL = @opcoes.get 'notesURL', @notesURL or "#{@serverURL}/note/"
     @notebookURL = @opcoes.get 'notebookURL', @notebookURL or "#{@serverURL}/notebook/"
-    @dataSources = @opcoes.get 'dataSources', @dataSources or []
+
     if not view
       @coletorNotebookId = @opcoes.get 'storageNotebook', ''
+    @noteid = @opcoes.get 'noteid', @noteid or ''
 
+  register: (container, configInstance)->
+    if configInstance.parseOpcoes 
+      configInstance.parseOpcoes(@opcoes)
+    @children.push([container,configInstance])
 
-    @noteid = @opcoes.get 'noteid', @noteid or false
+  toJSON: ->
+    json = {
+      'storageNotebook':@coletorNotebookId
+      'noteid': @noteid
+    }
+
+    for child in @children
+      [container, configInstance ] = child
+      json[container] = configInstance.toJSON()
+
+    return JSON.parse(JSON.stringify(json))
+
 
 module.exports={'Config':Config }
 

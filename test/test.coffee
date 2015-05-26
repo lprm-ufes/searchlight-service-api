@@ -28,6 +28,24 @@ test = (SLSAPI)->
           api.config.coletorNotebookId.should.equal('5514580391f57bdf0d0ba65b')
           done()
 
+      it "should generate config from children classes like datapool", (done)->
+        conf = {
+          dataSources: [
+            url:"http://sl.wancharle.com.br/note/?limit=10"
+            func_code: "function ala(item){return item}"
+          ]
+          }
+
+        api = new SLSAPI(conf)
+        api.on SLSAPI.Config.EVENT_READY, (id)->
+          api.config.toJSON().should.not.have.property('dataSources')
+          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          api.config.toJSON().should.have.property('dataSources')
+          done()
+
+
+        
+
     describe "User", (doneuser)->
       api =null
       before (done)->

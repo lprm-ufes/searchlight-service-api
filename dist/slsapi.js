@@ -219,6 +219,7 @@ Config = (function() {
   function Config(opcoes) {
     var self, xhr;
     this.id = utils.md5(JSON.stringify(opcoes)) + parseInt(1000 * Math.random());
+    this.children = [];
     self = this;
     this.parseOpcoes(opcoes);
     if (opcoes.urlConfServico) {
@@ -248,11 +249,32 @@ Config = (function() {
     this.logoutURL = this.opcoes.get('logoutURL', this.logoutURL || (this.serverURL + "/user/logout/"));
     this.notesURL = this.opcoes.get('notesURL', this.notesURL || (this.serverURL + "/note/"));
     this.notebookURL = this.opcoes.get('notebookURL', this.notebookURL || (this.serverURL + "/notebook/"));
-    this.dataSources = this.opcoes.get('dataSources', this.dataSources || []);
     if (!view) {
       this.coletorNotebookId = this.opcoes.get('storageNotebook', '');
     }
-    return this.noteid = this.opcoes.get('noteid', this.noteid || false);
+    return this.noteid = this.opcoes.get('noteid', this.noteid || '');
+  };
+
+  Config.prototype.register = function(container, configInstance) {
+    if (configInstance.parseOpcoes) {
+      configInstance.parseOpcoes(this.opcoes);
+    }
+    return this.children.push([container, configInstance]);
+  };
+
+  Config.prototype.toJSON = function() {
+    var child, configInstance, container, i, json, len, ref;
+    json = {
+      'storageNotebook': this.coletorNotebookId,
+      'noteid': this.noteid
+    };
+    ref = this.children;
+    for (i = 0, len = ref.length; i < len; i++) {
+      child = ref[i];
+      container = child[0], configInstance = child[1];
+      json[container] = configInstance.toJSON();
+    }
+    return JSON.parse(JSON.stringify(json));
   };
 
   return Config;
@@ -315,21 +337,42 @@ DataPool = (function() {
     return this.instances[config.id];
   };
 
-  DataPool.prototype._constructor = function(config) {
-    var dataSources, index, j, len, s;
-    DataPool.instances[config.id] = this;
-    this.config = config;
+  DataPool.prototype.parseOpcoes = function(opcoes) {
+    var index, j, len, ref, s;
+    this.dataSourcesConf = opcoes.get('dataSources', this.dataSourcesConf || []);
     this.dataSources = [];
-    dataSources = this.config.dataSources;
-    for (index = j = 0, len = dataSources.length; j < len; index = ++j) {
-      s = dataSources[index];
+    ref = this.dataSourcesConf;
+    for (index = j = 0, len = ref.length; j < len; index = ++j) {
+      s = ref[index];
       this.addDataSource(s);
     }
-    return events.on(config.id, DataSource.EVENT_LOADED, (function(_this) {
+    return events.on(this.config.id, DataSource.EVENT_LOADED, (function(_this) {
       return function() {
         return _this.onDataSourceLoaded();
       };
     })(this));
+  };
+
+  DataPool.prototype.toJSON = function() {
+    var ds;
+    return {
+      'dataSources': (function() {
+        var j, len, ref, results;
+        ref = this.dataSources;
+        results = [];
+        for (j = 0, len = ref.length; j < len; j++) {
+          ds = ref[j];
+          results.push(ds.toJSON());
+        }
+        return results;
+      }).call(this)
+    };
+  };
+
+  DataPool.prototype._constructor = function(config) {
+    DataPool.instances[config.id] = this;
+    this.config = config;
+    return config.register('dataSources', this);
   };
 
   DataPool.prototype.addDataSource = function(s) {
@@ -379,18 +422,6 @@ DataPool = (function() {
       results.push(source.load(this.config, force));
     }
     return results;
-  };
-
-  DataPool.prototype.toJSON = function() {
-    var array, f, i, j, len, ref;
-    array = [];
-    ref = this.dataSources;
-    for (i = j = 0, len = ref.length; j < len; i = ++j) {
-      f = ref[i];
-      f.func_code = f.func_code.toString();
-      array.push(f);
-    }
-    return array;
   };
 
   DataPool.prototype.onDataSourceLoaded = function() {
@@ -488,6 +519,14 @@ DataSource = (function() {
     this.notesChildren = {};
     this.categories = {};
     return this.categories_id = {};
+  };
+
+  DataSource.prototype.toJSON = function() {
+    return {
+      'func_code': this.func_code.toString(),
+      'url': this.url,
+      'cachedURL': this.cachedUrl
+    };
   };
 
   DataSource.prototype.isValid = function() {
