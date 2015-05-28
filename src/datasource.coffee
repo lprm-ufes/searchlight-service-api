@@ -99,9 +99,9 @@ class DataSource
 
   canLoadFromCache: (mashup)->
 
-    # if mashup have a id then the api have access to a service cache
+    # if mashup have a useCache=true then the api have access to a service cache
     # and if url is not the same of cache server then the datasoruce can load from cache
-    return (mashup.id and @url.indexOf(mashup.config.serverURL)== -1)
+    return (mashup.useCache  and @url.indexOf(mashup.config.serverURL)== -1)
     
 
   load: (mashup,force="") ->

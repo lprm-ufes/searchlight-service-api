@@ -13,6 +13,10 @@ class Mashup
     @title = @opcoes.get 'title', @title or ''
 
     @id = @opcoes.get 'id', @id or ''
+    if @id
+      @useCache = true
+    else
+      @useCache = false
 
   toJSON:->
     {
@@ -23,7 +27,6 @@ class Mashup
       'id': @id
     }
 
-  getCachedURL:(index,forceImport)->
   save: (success, fail)->
     xhr = ajax.post {
       url: @createURL

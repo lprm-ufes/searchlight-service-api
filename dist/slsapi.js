@@ -582,7 +582,7 @@ DataSource = (function() {
   };
 
   DataSource.prototype.canLoadFromCache = function(mashup) {
-    return mashup.id && this.url.indexOf(mashup.config.serverURL) === -1;
+    return mashup.useCache && this.url.indexOf(mashup.config.serverURL) === -1;
   };
 
   DataSource.prototype.load = function(mashup, force) {
@@ -905,7 +905,12 @@ Mashup = (function() {
     this.updateURL = this.opcoes.get('mashupUpdateURL', this.updateURL || (this.config.serverURL + "/mashup/update/"));
     this.cacheURL = this.opcoes.get('mashupCacheURL', this.cacheURL || (this.config.serverURL + "/note/getCachedURL"));
     this.title = this.opcoes.get('title', this.title || '');
-    return this.id = this.opcoes.get('id', this.id || '');
+    this.id = this.opcoes.get('id', this.id || '');
+    if (this.id) {
+      return this.useCache = true;
+    } else {
+      return this.useCache = false;
+    }
   };
 
   Mashup.prototype.toJSON = function() {
@@ -917,8 +922,6 @@ Mashup = (function() {
       'id': this.id
     };
   };
-
-  Mashup.prototype.getCachedURL = function(index, forceImport) {};
 
   Mashup.prototype.save = function(success, fail) {
     var xhr;
