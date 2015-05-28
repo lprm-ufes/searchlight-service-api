@@ -21,13 +21,27 @@ class User
 
   @instances = {} 
 
-  @getInstance: (config) ->
+  @getInstance: () ->
     return @instances[config.id]
 
   constructor: (@config)->
     User.instances[@config.id] = @
     @storage = localStorage
     @usuario = this.getUsuario()
+    @config.register(@)
+
+  parseOpcoes: (@opcoes) ->
+    @loginURL = @opcoes.get 'loginURL', @loginURL or "#{@config.serverURL}/user/login/"
+    @logoutURL = @opcoes.get 'logoutURL', @logoutURL or "#{@config.serverURL}/user/logout/"
+    # ps: dont parse user_id because user need be logged first and dont use the user suplied by conf
+
+  toJSON: ()->
+    {
+      loginURL:@loginURL
+      logoutURL:@logoutURL
+      user: @user_id
+    }
+
 
   isLogged: ()->
     usuario = @getUsuario()
@@ -58,14 +72,14 @@ class User
     @storage.removeItem('Usuario')
     @usuario = null
     @user_id = null
-    xhr= ajax.get(@config.logoutURL)
+    xhr= ajax.get(@logoutURL)
     xhr.done((req)=> events.trigger(@config.id,User.EVENT_LOGOUT_SUCCESS,req))
     xhr.fail((req)=> events.trigger(@config.id,User.EVENT_LOGOUT_FAIL,req))
 
   login: (u,p) =>
     #disable the button so we can't resubmit while we wait
     if (u and  p)
-      url = @config.loginURL
+      url = @loginURL
       events.trigger(@config.id,User.EVENT_LOGIN_START)
       xhr= ajax.post {
           url:url

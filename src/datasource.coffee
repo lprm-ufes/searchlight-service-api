@@ -97,70 +97,69 @@ class DataSource
       @notesChildren[parentId] = [ ]
     @notesChildren[parentId].push(child)
 
-  canLoadFromCache: (config)->
+  canLoadFromCache: (mashup)->
 
-    # if config have a noteid then config have access to a service cache
+    # if mashup have a id then the api have access to a service cache
     # and if url is not the same of cache server then the datasoruce can load from cache
-    return (config.noteid and @url.indexOf(config.serverURL)== -1)
+    return (mashup.id and @url.indexOf(mashup.config.serverURL)== -1)
     
 
-  load: (config,force="") ->
+  load: (mashup,force="") ->
     @resetData()
-    if @canLoadFromCache(config)
+    if @canLoadFromCache(mashup)
       if @cachedURL
-        @loadFromCache(config)
+        @loadFromCache(mashup)
       else
-        @getCachedURL(config,force,()=>@loadFromCache(config))
+        @getCachedURL(mashup,force,()=>@loadFromCache(mashup))
     else
-      @loadData(config)
+      @loadData(mashup)
 
   # load data to dataSource from the datasource.url
-  loadData: (config) ->
+  loadData: (mashup) ->
     xhr = ajax.get(@url,{type:'json'})
     xhr.done (res)=> 
       json = res.body
       if res.type.toLowerCase().indexOf("text") > -1
         json = JSON.parse(res.text)
-      @onDataLoaded(json,@,config)
+      @onDataLoaded(json,@,mashup)
 
-    xhr.fail (err)-> events.trigger(config.id,DataSource.EVENT_REQUEST_FAIL,err)
+    xhr.fail (err)-> events.trigger(mashup.config.id,DataSource.EVENT_REQUEST_FAIL,err)
  
-  loadFromCache: (config)->
+  loadFromCache: (mashup)->
     url ="#{@cachedURL}&limit=1000 "
     xhr = ajax.get(url,{type:'json'})
     xhr.done (res)=>
       json = res.body
       if res.type.toLowerCase().indexOf("text") > -1
         json = JSON.parse(res.text)
-      @onDataLoaded(json,@cachedSource,config)
+      @onDataLoaded(json,@cachedSource,mashup)
 
-    xhr.fail (err)-> events.trigger(config.id,DataSource.EVENT_REQUEST_FAIL,err)
+    xhr.fail (err)-> events.trigger(mashup.config.id,DataSource.EVENT_REQUEST_FAIL,err)
    
-
-         
   # Gets a cached url for that datasource                                                                                                           
   # Data from original url is imported to server who offers a cached version with option to filtering 
-  getCachedURL: (config,forceImport="",cb)->
-    url ="#{config.serverURL}/note/getCachedURL?noteid=#{config.noteid}&fonteIndex=#{@index}&forceImport=#{forceImport}"
+  getCachedURL: (mashup,forceImport="",cb)->
+    url ="#{mashup.cacheURL}?mashupid=#{mashup.id}&fonteIndex=#{@index}&forceImport=#{forceImport}"
+
     xhr = ajax.get(url,{type:'json'})
     xhr.done (res)=>
           @cachedURL = res.body.cachedUrl
           cb()
     xhr.fail (err)=>
         if err.status == 400
-          @loadData(config)
+          @loadData(mashup)
         else
           console.log(err)
 
   # callback function called on data loaded
-  onDataLoaded: (data,fonte,config)->
+  onDataLoaded: (data,fonte,mashup)->
     try
       for d, i in data
         @addItem(d,fonte.func_code)
-      events.trigger(config.id,DataSource.EVENT_LOADED)
+      events.trigger(mashup.config.id,DataSource.EVENT_LOADED)
     catch e
       console.error(e.toString())
-      events.trigger(config.id,DataSource.EVENT_LOAD_FAIL)
+      events.trigger(mashup.config.id,DataSource.EVENT_LOAD_FAIL)
       return
 
    

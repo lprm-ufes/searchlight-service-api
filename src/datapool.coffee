@@ -12,12 +12,12 @@ createDataSource = (url,functionCode,i)->
     else
       return new DataSource(url,functionCode,i)
 
-createDataPool = (config)->
-  instance = DataPool.getInstance(config)
+createDataPool = (mashup)->
+  instance = DataPool.getInstance(mashup.config)
   if instance
     instance.destroy()
   instance = new DataPool()
-  instance._constructor(config)
+  instance._constructor(mashup)
   return instance
 
 
@@ -51,10 +51,10 @@ class DataPool
 
 
 
-  _constructor: (config) ->
-    DataPool.instances[config.id] = @
-    @config = config
-    config.register('dataSources', @)
+  _constructor: (@mashup) ->
+    DataPool.instances[@mashup.config.id] = @
+    @config = @mashup.config
+    @config.register(@)
 
   addDataSource: (s)->
     source = createDataSource(s.url,s.func_code,@dataSources.length)
@@ -77,14 +77,14 @@ class DataPool
   loadOneData: (fonteIndex,force="") ->
     @loadingOneData = true
     events.trigger(@config.id,DataPool.EVENT_LOAD_START)
-    @dataSources[fonteIndex].load(@config,force)
+    @dataSources[fonteIndex].load(@mashup,force)
 
   # load all data from datasources
   loadAllData: (force="") =>
     @sourcesLoaded = 0
     events.trigger(@config.id,DataPool.EVENT_LOAD_START)
     for source, i in @dataSources
-      source.load(@config,force)
+      source.load(@mashup,force)
 
   onDataSourceLoaded: ()->
     if @loadingOneData

@@ -13,27 +13,39 @@ class Notes
   @getInstance: (config) ->
     return @instances[config.id]
 
-  constructor: (config) ->
-    Notes.instances[config.id] = @
-    @config = config 
+  constructor: (@config) ->
+    Notes.instances[@config.id] = @
+    @config.register(@)
+
+  parseOpcoes: (@opcoes)->
+    @createURL = @opcoes.get 'notesCreateURL', @createURL or "#{@config.serverURL}/note/create/"
+    @readURL = @opcoes.get 'notesReadURL', @readURL or "#{@config.serverURL}/note/"
+    @updateURL = @opcoes.get 'notesUpdateURL', @updateURL or "#{@config.serverURL}/note/update/"
+
+  toJSON: ->
+    {
+      notesCreateURL:@createURL
+      notesReadURL: @readURL
+      notesUpdateURL: @updateURL
+    }
 
   getByUser: (user_id,callback, callback_fail) ->
-    xhr = ajax.get("#{@config.notesURL}?user=#{user_id}")
+    xhr = ajax.get("#{@readURL}?user=#{user_id}")
     xhr.done( (res)-> callback(res.body))
     xhr.fail( (err) -> callback_fail(err))
 
   getByQuery: (query,callback, callback_fail) ->
-    xhr = ajax.get("#{@config.notesURL}?#{query}")
+    xhr = ajax.get("#{@readURL}?#{query}")
     xhr.done( (res)-> callback(res.body))
     xhr.fail( (err) -> callback_fail(err))
 
   update: (note_id,queryparams,callback,callback_fail)->
-    xhr = ajax.post({url:"#{@config.notesURL}update/#{note_id}/",data:queryparams})
+    xhr = ajax.post({url:"#{@updateURL}#{note_id}/",data:queryparams})
     xhr.done( (res)-> callback(res.body))
     xhr.fail( (err) -> callback_fail(err))
 
   delete: (note_id,callback)->
-    url ="#{@config.notesURL}#{note_id}"
+    url ="#{@readURL}#{note_id}"
     xhr = ajax.del url
     if callback
       xhr.done((data)-> callback(data))
@@ -44,11 +56,11 @@ class Notes
 
   enviar: (note,notebookId=null, callback_ok=(()->),callback_fail=(()->)) ->
     if not notebookId
-      if not @config.coletorNotebookId
+      if not @config.storageNotebook
         console.error('NotebookId não foi informado!')
         return
       else
-        notebookId = @config.coletorNotebookId
+        notebookId = @config.storageNotebook
 
 
     params = note
@@ -66,7 +78,7 @@ class Notes
         ft = new FileTransfer()
         ft.upload(
           note.fotoURI,
-          encodeURI(@config.createURL),
+          encodeURI(@createURL),
           (r) =>
             events.trigger(@config.id,Notes.EVENT_ADD_NOTE_FINISH)
             callback_ok(r)
@@ -75,7 +87,7 @@ class Notes
             callback_fail(error)
           , options)
     else
-      xhr = ajax.post({url:@config.createURL, data:params})
+      xhr = ajax.post({url:@createURL, data:params})
       xhr.done((res) =>
         events.trigger(@config.id,Notes.EVENT_ADD_NOTE_FINISH,res.body)
         callback_ok(res.body)

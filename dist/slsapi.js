@@ -200,7 +200,7 @@ module.exports = {
 
 
 
-},{"./utils":13,"superagent":undefined}],3:[function(require,module,exports){
+},{"./utils":14,"superagent":undefined}],3:[function(require,module,exports){
 var Config, ajax, events, utils;
 
 events = require('./events');
@@ -242,28 +242,29 @@ Config = (function() {
   }
 
   Config.prototype.parseOpcoes = function(opcoes, view) {
+    var child, i, len, ref, results;
     this.opcoes = new utils.Dicionario(opcoes);
     this.serverURL = this.opcoes.get('serverURL', this.serverURL || 'http://sl.wancharle.com.br');
-    this.createURL = this.opcoes.get('createURL', this.createURL || (this.serverURL + "/note/create/"));
-    this.loginURL = this.opcoes.get('loginURL', this.loginURL || (this.serverURL + "/user/login/"));
-    this.logoutURL = this.opcoes.get('logoutURL', this.logoutURL || (this.serverURL + "/user/logout/"));
-    this.notesURL = this.opcoes.get('notesURL', this.notesURL || (this.serverURL + "/note/"));
     this.notebookURL = this.opcoes.get('notebookURL', this.notebookURL || (this.serverURL + "/notebook/"));
-    if (!view) {
-      this.coletorNotebookId = this.opcoes.get('storageNotebook', '');
+    this.storageNotebook = this.opcoes.get('storageNotebook', '');
+    ref = this.children;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      child = ref[i];
+      results.push(child.parseOpcoes(this.opcoes));
     }
-    return this.noteid = this.opcoes.get('noteid', this.noteid || '');
+    return results;
   };
 
-  Config.prototype.register = function(container, configInstance) {
+  Config.prototype.register = function(configInstance) {
     if (configInstance.parseOpcoes) {
       configInstance.parseOpcoes(this.opcoes);
     }
-    return this.children.push([container, configInstance]);
+    return this.children.push(configInstance);
   };
 
   Config.prototype.toJSON = function() {
-    var child, configInstance, container, i, json, len, ref;
+    var child, i, json, len, ref;
     json = {
       'storageNotebook': this.coletorNotebookId,
       'noteid': this.noteid
@@ -271,8 +272,7 @@ Config = (function() {
     ref = this.children;
     for (i = 0, len = ref.length; i < len; i++) {
       child = ref[i];
-      container = child[0], configInstance = child[1];
-      json[container] = configInstance.toJSON();
+      json = utils.merge(json, child.toJSON());
     }
     return JSON.parse(JSON.stringify(json));
   };
@@ -287,7 +287,7 @@ module.exports = {
 
 
 
-},{"./ajax":2,"./events":8,"./utils":13}],4:[function(require,module,exports){
+},{"./ajax":2,"./events":8,"./utils":14}],4:[function(require,module,exports){
 var DataPool, DataSource, DataSourceCSV, DataSourceGoogle, createDataPool, createDataSource, events,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -311,14 +311,14 @@ createDataSource = function(url, functionCode, i) {
   }
 };
 
-createDataPool = function(config) {
+createDataPool = function(mashup) {
   var instance;
-  instance = DataPool.getInstance(config);
+  instance = DataPool.getInstance(mashup.config);
   if (instance) {
     instance.destroy();
   }
   instance = new DataPool();
-  instance._constructor(config);
+  instance._constructor(mashup);
   return instance;
 };
 
@@ -369,10 +369,11 @@ DataPool = (function() {
     };
   };
 
-  DataPool.prototype._constructor = function(config) {
-    DataPool.instances[config.id] = this;
-    this.config = config;
-    return config.register('dataSources', this);
+  DataPool.prototype._constructor = function(mashup1) {
+    this.mashup = mashup1;
+    DataPool.instances[this.mashup.config.id] = this;
+    this.config = this.mashup.config;
+    return this.config.register(this);
   };
 
   DataPool.prototype.addDataSource = function(s) {
@@ -405,7 +406,7 @@ DataPool = (function() {
     }
     this.loadingOneData = true;
     events.trigger(this.config.id, DataPool.EVENT_LOAD_START);
-    return this.dataSources[fonteIndex].load(this.config, force);
+    return this.dataSources[fonteIndex].load(this.mashup, force);
   };
 
   DataPool.prototype.loadAllData = function(force) {
@@ -419,7 +420,7 @@ DataPool = (function() {
     results = [];
     for (i = j = 0, len = ref.length; j < len; i = ++j) {
       source = ref[i];
-      results.push(source.load(this.config, force));
+      results.push(source.load(this.mashup, force));
     }
     return results;
   };
@@ -580,31 +581,31 @@ DataSource = (function() {
     return this.notesChildren[parentId].push(child);
   };
 
-  DataSource.prototype.canLoadFromCache = function(config) {
-    return config.noteid && this.url.indexOf(config.serverURL) === -1;
+  DataSource.prototype.canLoadFromCache = function(mashup) {
+    return mashup.id && this.url.indexOf(mashup.config.serverURL) === -1;
   };
 
-  DataSource.prototype.load = function(config, force) {
+  DataSource.prototype.load = function(mashup, force) {
     if (force == null) {
       force = "";
     }
     this.resetData();
-    if (this.canLoadFromCache(config)) {
+    if (this.canLoadFromCache(mashup)) {
       if (this.cachedURL) {
-        return this.loadFromCache(config);
+        return this.loadFromCache(mashup);
       } else {
-        return this.getCachedURL(config, force, (function(_this) {
+        return this.getCachedURL(mashup, force, (function(_this) {
           return function() {
-            return _this.loadFromCache(config);
+            return _this.loadFromCache(mashup);
           };
         })(this));
       }
     } else {
-      return this.loadData(config);
+      return this.loadData(mashup);
     }
   };
 
-  DataSource.prototype.loadData = function(config) {
+  DataSource.prototype.loadData = function(mashup) {
     var xhr;
     xhr = ajax.get(this.url, {
       type: 'json'
@@ -616,15 +617,15 @@ DataSource = (function() {
         if (res.type.toLowerCase().indexOf("text") > -1) {
           json = JSON.parse(res.text);
         }
-        return _this.onDataLoaded(json, _this, config);
+        return _this.onDataLoaded(json, _this, mashup);
       };
     })(this));
     return xhr.fail(function(err) {
-      return events.trigger(config.id, DataSource.EVENT_REQUEST_FAIL, err);
+      return events.trigger(mashup.config.id, DataSource.EVENT_REQUEST_FAIL, err);
     });
   };
 
-  DataSource.prototype.loadFromCache = function(config) {
+  DataSource.prototype.loadFromCache = function(mashup) {
     var url, xhr;
     url = this.cachedURL + "&limit=1000 ";
     xhr = ajax.get(url, {
@@ -637,20 +638,20 @@ DataSource = (function() {
         if (res.type.toLowerCase().indexOf("text") > -1) {
           json = JSON.parse(res.text);
         }
-        return _this.onDataLoaded(json, _this.cachedSource, config);
+        return _this.onDataLoaded(json, _this.cachedSource, mashup);
       };
     })(this));
     return xhr.fail(function(err) {
-      return events.trigger(config.id, DataSource.EVENT_REQUEST_FAIL, err);
+      return events.trigger(mashup.config.id, DataSource.EVENT_REQUEST_FAIL, err);
     });
   };
 
-  DataSource.prototype.getCachedURL = function(config, forceImport, cb) {
+  DataSource.prototype.getCachedURL = function(mashup, forceImport, cb) {
     var url, xhr;
     if (forceImport == null) {
       forceImport = "";
     }
-    url = config.serverURL + "/note/getCachedURL?noteid=" + config.noteid + "&fonteIndex=" + this.index + "&forceImport=" + forceImport;
+    url = mashup.cacheURL + "?mashupid=" + mashup.id + "&fonteIndex=" + this.index + "&forceImport=" + forceImport;
     xhr = ajax.get(url, {
       type: 'json'
     });
@@ -663,7 +664,7 @@ DataSource = (function() {
     return xhr.fail((function(_this) {
       return function(err) {
         if (err.status === 400) {
-          return _this.loadData(config);
+          return _this.loadData(mashup);
         } else {
           return console.log(err);
         }
@@ -671,18 +672,18 @@ DataSource = (function() {
     })(this));
   };
 
-  DataSource.prototype.onDataLoaded = function(data, fonte, config) {
+  DataSource.prototype.onDataLoaded = function(data, fonte, mashup) {
     var d, e, i, j, len;
     try {
       for (i = j = 0, len = data.length; j < len; i = ++j) {
         d = data[i];
         this.addItem(d, fonte.func_code);
       }
-      return events.trigger(config.id, DataSource.EVENT_LOADED);
+      return events.trigger(mashup.config.id, DataSource.EVENT_LOADED);
     } catch (_error) {
       e = _error;
       console.error(e.toString());
-      events.trigger(config.id, DataSource.EVENT_LOAD_FAIL);
+      events.trigger(mashup.config.id, DataSource.EVENT_LOAD_FAIL);
     }
   };
 
@@ -696,7 +697,7 @@ module.exports = {
 
 
 
-},{"./ajax":2,"./events":8,"./utils":13}],6:[function(require,module,exports){
+},{"./ajax":2,"./events":8,"./utils":14}],6:[function(require,module,exports){
 var DataSource, DataSourceCSV, ajax, csvParse, isRunningOnBrowser,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
@@ -776,7 +777,7 @@ module.exports = {
 
 
 
-},{"./ajax":2,"./datasource":5,"./utils":13,"babyparse":undefined}],7:[function(require,module,exports){
+},{"./ajax":2,"./datasource":5,"./utils":14,"babyparse":undefined}],7:[function(require,module,exports){
 var DataSource, DataSourceGoogle, TABLETOP, isRunningOnBrowser,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
@@ -820,7 +821,7 @@ module.exports = {
 
 
 
-},{"./datasource":5,"./utils":13,"tabletop":undefined}],8:[function(require,module,exports){
+},{"./datasource":5,"./utils":14,"tabletop":undefined}],8:[function(require,module,exports){
 var bind, emitter, emitters, events, isRunningOnBrowser, select, trigger, unbind;
 
 emitter = null;
@@ -886,7 +887,68 @@ module.exports = {
 
 
 
-},{"./utils":13,"events":undefined}],9:[function(require,module,exports){
+},{"./utils":14,"events":undefined}],9:[function(require,module,exports){
+var Mashup, ajax;
+
+ajax = require('./ajax');
+
+Mashup = (function() {
+  function Mashup(config) {
+    this.config = config;
+    this.config.register(this);
+  }
+
+  Mashup.prototype.parseOpcoes = function(opcoes) {
+    this.opcoes = opcoes;
+    this.createURL = this.opcoes.get('mashupCreateURL', this.createURL || (this.config.serverURL + "/mashup/create/"));
+    this.readURL = this.opcoes.get('mashupReadURL', this.readURL || (this.config.serverURL + "/mashup/"));
+    this.updateURL = this.opcoes.get('mashupUpdateURL', this.updateURL || (this.config.serverURL + "/mashup/update/"));
+    this.cacheURL = this.opcoes.get('mashupCacheURL', this.cacheURL || (this.config.serverURL + "/note/getCachedURL"));
+    this.title = this.opcoes.get('title', this.title || '');
+    return this.id = this.opcoes.get('id', this.id || '');
+  };
+
+  Mashup.prototype.toJSON = function() {
+    return {
+      'mashupCreateURL': this.createURL,
+      'mashupReadURL': this.createURL,
+      'mashupUpdateURL': this.createURL,
+      'title': this.title,
+      'id': this.id
+    };
+  };
+
+  Mashup.prototype.getCachedURL = function(index, forceImport) {};
+
+  Mashup.prototype.save = function(success, fail) {
+    var xhr;
+    xhr = ajax.post({
+      url: this.createURL,
+      data: this.config.toJSON()
+    });
+    xhr.done(function(res) {
+      self.parseOpcoes(res.body);
+      return events.trigger(self.id, Config.EVENT_READY);
+    });
+    return xhr.fail(function(err) {
+      return events.trigger(self.id, Config.EVENT_FAIL, {
+        err: err,
+        message: 'Error: não foi possível carregar configuração da visualização'
+      });
+    });
+  };
+
+  return Mashup;
+
+})();
+
+module.exports = {
+  'Mashup': Mashup
+};
+
+
+
+},{"./ajax":2}],10:[function(require,module,exports){
 var Notebook, ajax;
 
 ajax = require('./ajax');
@@ -943,7 +1005,7 @@ module.exports = {
 
 
 
-},{"./ajax":2}],10:[function(require,module,exports){
+},{"./ajax":2}],11:[function(require,module,exports){
 var Notes, ajax, events;
 
 ajax = require('./ajax');
@@ -967,14 +1029,30 @@ Notes = (function() {
     return this.instances[config.id];
   };
 
-  function Notes(config) {
-    Notes.instances[config.id] = this;
-    this.config = config;
+  function Notes(config1) {
+    this.config = config1;
+    Notes.instances[this.config.id] = this;
+    this.config.register(this);
   }
+
+  Notes.prototype.parseOpcoes = function(opcoes) {
+    this.opcoes = opcoes;
+    this.createURL = this.opcoes.get('notesCreateURL', this.createURL || (this.config.serverURL + "/note/create/"));
+    this.readURL = this.opcoes.get('notesReadURL', this.readURL || (this.config.serverURL + "/note/"));
+    return this.updateURL = this.opcoes.get('notesUpdateURL', this.updateURL || (this.config.serverURL + "/note/update/"));
+  };
+
+  Notes.prototype.toJSON = function() {
+    return {
+      notesCreateURL: this.createURL,
+      notesReadURL: this.readURL,
+      notesUpdateURL: this.updateURL
+    };
+  };
 
   Notes.prototype.getByUser = function(user_id, callback, callback_fail) {
     var xhr;
-    xhr = ajax.get(this.config.notesURL + "?user=" + user_id);
+    xhr = ajax.get(this.readURL + "?user=" + user_id);
     xhr.done(function(res) {
       return callback(res.body);
     });
@@ -985,7 +1063,7 @@ Notes = (function() {
 
   Notes.prototype.getByQuery = function(query, callback, callback_fail) {
     var xhr;
-    xhr = ajax.get(this.config.notesURL + "?" + query);
+    xhr = ajax.get(this.readURL + "?" + query);
     xhr.done(function(res) {
       return callback(res.body);
     });
@@ -997,7 +1075,7 @@ Notes = (function() {
   Notes.prototype.update = function(note_id, queryparams, callback, callback_fail) {
     var xhr;
     xhr = ajax.post({
-      url: this.config.notesURL + "update/" + note_id + "/",
+      url: "" + this.updateURL + note_id + "/",
       data: queryparams
     });
     xhr.done(function(res) {
@@ -1010,7 +1088,7 @@ Notes = (function() {
 
   Notes.prototype["delete"] = function(note_id, callback) {
     var url, xhr;
-    url = "" + this.config.notesURL + note_id;
+    url = "" + this.readURL + note_id;
     xhr = ajax.del(url);
     if (callback) {
       xhr.done(function(data) {
@@ -1042,11 +1120,11 @@ Notes = (function() {
       callback_fail = (function() {});
     }
     if (!notebookId) {
-      if (!this.config.coletorNotebookId) {
+      if (!this.config.storageNotebook) {
         console.error('NotebookId não foi informado!');
         return;
       } else {
-        notebookId = this.config.coletorNotebookId;
+        notebookId = this.config.storageNotebook;
       }
     }
     params = note;
@@ -1060,7 +1138,7 @@ Notes = (function() {
       options.mimeType = "image/jpeg";
       options.params.fotoURL = true;
       ft = new FileTransfer();
-      return ft.upload(note.fotoURI, encodeURI(this.config.createURL), (function(_this) {
+      return ft.upload(note.fotoURI, encodeURI(this.createURL), (function(_this) {
         return function(r) {
           events.trigger(_this.config.id, Notes.EVENT_ADD_NOTE_FINISH);
           return callback_ok(r);
@@ -1073,7 +1151,7 @@ Notes = (function() {
       })(this), options);
     } else {
       xhr = ajax.post({
-        url: this.config.createURL,
+        url: this.createURL,
         data: params
       });
       xhr.done((function(_this) {
@@ -1101,8 +1179,8 @@ module.exports = {
 
 
 
-},{"./ajax":2,"./events":8}],11:[function(require,module,exports){
-var Config, Notebook, SLSAPI, User, ajax, dataPool, events, isRunningOnBrowser, notes;
+},{"./ajax":2,"./events":8}],12:[function(require,module,exports){
+var Config, Mashup, Notebook, SLSAPI, User, ajax, dataPool, events, isRunningOnBrowser, notes;
 
 isRunningOnBrowser = require('./utils').isRunningOnBrowser;
 
@@ -1118,6 +1196,8 @@ User = require('./user').User;
 
 Config = require('./config').Config;
 
+Mashup = require('./mashup').Mashup;
+
 dataPool = require('./datapool');
 
 SLSAPI = (function() {
@@ -1126,6 +1206,7 @@ SLSAPI = (function() {
     this.user = new User(this.config);
     this.notes = new notes.Notes(this.config);
     this.notebook = new Notebook(this.config);
+    this.mashup = new Mashup(this.config);
   }
 
   SLSAPI.prototype.trigger = function(event, params) {
@@ -1162,7 +1243,7 @@ module.exports = SLSAPI;
 
 
 
-},{"./ajax":2,"./config":3,"./datapool":4,"./events":8,"./notebook":9,"./notes":10,"./user":12,"./utils":13}],12:[function(require,module,exports){
+},{"./ajax":2,"./config":3,"./datapool":4,"./events":8,"./mashup":9,"./notebook":10,"./notes":11,"./user":13,"./utils":14}],13:[function(require,module,exports){
 (function (process){
 var CLIENT_SIDE, LocalStorage, User, ajax, events, localStorage, md5,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -1197,7 +1278,7 @@ User = (function() {
 
   User.instances = {};
 
-  User.getInstance = function(config) {
+  User.getInstance = function() {
     return this.instances[config.id];
   };
 
@@ -1207,7 +1288,22 @@ User = (function() {
     User.instances[this.config.id] = this;
     this.storage = localStorage;
     this.usuario = this.getUsuario();
+    this.config.register(this);
   }
+
+  User.prototype.parseOpcoes = function(opcoes) {
+    this.opcoes = opcoes;
+    this.loginURL = this.opcoes.get('loginURL', this.loginURL || (this.config.serverURL + "/user/login/"));
+    return this.logoutURL = this.opcoes.get('logoutURL', this.logoutURL || (this.config.serverURL + "/user/logout/"));
+  };
+
+  User.prototype.toJSON = function() {
+    return {
+      loginURL: this.loginURL,
+      logoutURL: this.logoutURL,
+      user: this.user_id
+    };
+  };
 
   User.prototype.isLogged = function() {
     var tempo_logado, usuario;
@@ -1243,7 +1339,7 @@ User = (function() {
     this.storage.removeItem('Usuario');
     this.usuario = null;
     this.user_id = null;
-    xhr = ajax.get(this.config.logoutURL);
+    xhr = ajax.get(this.logoutURL);
     xhr.done((function(_this) {
       return function(req) {
         return events.trigger(_this.config.id, User.EVENT_LOGOUT_SUCCESS, req);
@@ -1259,7 +1355,7 @@ User = (function() {
   User.prototype.login = function(u, p) {
     var url, xhr;
     if (u && p) {
-      url = this.config.loginURL;
+      url = this.loginURL;
       events.trigger(this.config.id, User.EVENT_LOGIN_START);
       xhr = ajax.post({
         url: url,
@@ -1302,14 +1398,15 @@ module.exports = {
 
 
 }).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"./ajax":2,"./events":8,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"blueimp-md5":undefined,"node-localstorage":undefined}],13:[function(require,module,exports){
+},{"./ajax":2,"./events":8,"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"blueimp-md5":undefined,"node-localstorage":undefined}],14:[function(require,module,exports){
 (function (process){
-var CLIENT_SIDE, Dicionario, dms2decPTBR, getURLParameter, md5, parseFloatPTBR, string2function,
+var CLIENT_SIDE, Dicionario, dms2decPTBR, extend, getURLParameter, md5, merge, parseFloatPTBR, string2function,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 if (typeof process.browser === 'undefined') {
   md5 = require('blueimp-md5').md5;
+  extend = require('node.extend');
   CLIENT_SIDE = false;
   dms2decPTBR = require('dms2dec-ptbr');
 } else {
@@ -1372,6 +1469,18 @@ parseFloatPTBR = function(str) {
   }
 };
 
+merge = function(deep, target, source) {
+  if (CLIENT_SIDE) {
+    if (deep) {
+      return $.extend(true, target, source);
+    } else {
+      return $.extend(target, source);
+    }
+  } else {
+    return extend(deep, target, source);
+  }
+};
+
 if (CLIENT_SIDE) {
   window.parseFloatPTBR = parseFloatPTBR;
   window.string2function = string2function;
@@ -1385,10 +1494,11 @@ module.exports = {
   getURLParameter: getURLParameter,
   md5: md5,
   dms2decPTBR: dms2decPTBR,
-  isRunningOnBrowser: CLIENT_SIDE
+  isRunningOnBrowser: CLIENT_SIDE,
+  merge: merge
 };
 
 
 
 }).call(this,require("/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"))
-},{"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"blueimp-md5":undefined,"dms2dec-ptbr":undefined}]},{},[11]);
+},{"/home/wancharle/searchlight-service-api/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":1,"blueimp-md5":undefined,"dms2dec-ptbr":undefined,"node.extend":undefined}]},{},[12]);

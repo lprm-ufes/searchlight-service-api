@@ -5,6 +5,7 @@ notes = require('./notes')
 Notebook = require('./notebook').Notebook
 User  = require('./user').User
 Config  = require('./config').Config
+Mashup  = require('./mashup').Mashup
 dataPool = require('./datapool')
 
 class SLSAPI
@@ -14,6 +15,7 @@ class SLSAPI
     @user = new User(@config)
     @notes = new notes.Notes(@config)
     @notebook = new Notebook(@config)
+    @mashup = new Mashup(@config)
  
   # shortcuts which abstract the use of events
   trigger: (event,params)->

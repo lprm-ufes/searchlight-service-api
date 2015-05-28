@@ -30,20 +30,20 @@ class Config
   parseOpcoes: (opcoes,view)->
     @opcoes = new utils.Dicionario(opcoes)
     @serverURL = @opcoes.get 'serverURL', @serverURL or 'http://sl.wancharle.com.br'
-    @createURL = @opcoes.get 'createURL', @createURL or "#{@serverURL}/note/create/"
-    @loginURL = @opcoes.get 'loginURL', @loginURL or "#{@serverURL}/user/login/"
-    @logoutURL = @opcoes.get 'logoutURL', @logoutURL or "#{@serverURL}/user/logout/"
-    @notesURL = @opcoes.get 'notesURL', @notesURL or "#{@serverURL}/note/"
+
     @notebookURL = @opcoes.get 'notebookURL', @notebookURL or "#{@serverURL}/notebook/"
 
-    if not view
-      @coletorNotebookId = @opcoes.get 'storageNotebook', ''
-    @noteid = @opcoes.get 'noteid', @noteid or ''
+    @storageNotebook = @opcoes.get 'storageNotebook', ''
+    
+    # do parseOpcoes in children
+    for child in @children
+      child.parseOpcoes(@opcoes)
 
-  register: (container, configInstance)->
-    if configInstance.parseOpcoes 
+  register: ( configInstance)->
+    if configInstance.parseOpcoes
       configInstance.parseOpcoes(@opcoes)
-    @children.push([container,configInstance])
+    @children.push(configInstance)
+    
 
   toJSON: ->
     json = {
@@ -52,8 +52,7 @@ class Config
     }
 
     for child in @children
-      [container, configInstance ] = child
-      json[container] = configInstance.toJSON()
+        json = utils.merge(json,child.toJSON())
 
     return JSON.parse(JSON.stringify(json))
 

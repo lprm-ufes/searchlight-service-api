@@ -1,5 +1,6 @@
 if typeof process.browser == 'undefined'
   md5 = require('blueimp-md5').md5
+  extend = require('node.extend')
   CLIENT_SIDE = false
   dms2decPTBR = require('dms2dec-ptbr')
 else
@@ -62,6 +63,15 @@ parseFloatPTBR = (str) ->
   else
     return parseFloat(itens[1])
 
+merge = (deep,target,source)->
+  if CLIENT_SIDE
+    if deep
+      return $.extend(true,target,source)
+    else
+      return $.extend(target,source)
+  else
+    return extend(deep,target,source)
+
 
 # exportando funções para acesso externo
 if CLIENT_SIDE
@@ -70,7 +80,9 @@ if CLIENT_SIDE
   window.getURLParameter = getURLParameter
 
 
+
 module.exports = {
+    
     Dicionario: Dicionario
     parseFloatPTBR: parseFloatPTBR
     string2function: string2function
@@ -78,6 +90,7 @@ module.exports = {
     md5: md5
     dms2decPTBR: dms2decPTBR
     isRunningOnBrowser: CLIENT_SIDE
+    merge: merge
   }
 # vim: set ts=2 sw=2 sts=2 expandtab:
 

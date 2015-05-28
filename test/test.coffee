@@ -21,11 +21,11 @@ test = (SLSAPI)->
         apif.on SLSAPI.Config.EVENT_FAIL, (id)->
           done()
 
-      it "should have a coletorNotebookId after parseOpcoes with a urlConfServico option" , (done)->
+      it "should have a storageNotebook after parseOpcoes with a urlConfServico option" , (done)->
         conf = {urlConfServico:'http://sl.wancharle.com.br/note/555502050829091e5f7cf72c'}
         api = new SLSAPI(conf)
         api.on SLSAPI.Config.EVENT_READY, (id)->
-          api.config.coletorNotebookId.should.equal('5514580391f57bdf0d0ba65b')
+          api.config.storageNotebook.should.equal('5514580391f57bdf0d0ba65b')
           done()
 
       it "should generate config from children classes like datapool", (done)->
@@ -35,16 +35,24 @@ test = (SLSAPI)->
             func_code: "function ala(item){return item}"
           ]
           }
-
         api = new SLSAPI(conf)
         api.on SLSAPI.Config.EVENT_READY, (id)->
           api.config.toJSON().should.not.have.property('dataSources')
-          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
           api.config.toJSON().should.have.property('dataSources')
           done()
 
+      it 'should allow store the api settings to mashup on storageService',(done)->
+        # criar nova collection no servidor para representar as configuracoes em vez de usar a propria nota...
+        # comentar sobre isso no tcc...
+        mashupTitle = 'teste de salvamento de conf'
 
-        
+        success = (url)->
+          done()
+        fail = (err)->
+          console.log(err.response.body)
+        api.config.save(title,success, fail)
+
 
     describe "User", (doneuser)->
       api =null
@@ -84,6 +92,29 @@ test = (SLSAPI)->
             api2.user.logout()
             api2.on SLSAPI.User.EVENT_LOGOUT_FAIL, (req)->
               done()
+
+    describe "Notebook", ->
+      api =null
+      notebookid=0
+
+      before (done)->
+        conf = {}
+        api = new SLSAPI(conf)
+        api.on SLSAPI.Config.EVENT_READY, (id)->
+          done()
+
+      it 'should get notebook by name', (done)->
+        ok = (notebook) ->
+          if notebook[0].name == 'mapas'
+            notebookid = notebook[0].id
+            done()
+        api.notebook.getByName('mapas', ok,(err)->console.log err.response)
+
+      it 'should get notebook by id', (done)->
+        ok = (notebook) ->
+          if notebook.id == notebookid
+            done()
+        api.notebook.getById(notebookid, ok,(err)->console.log err.response)
 
     describe "Notes", ->
       api =null
@@ -151,29 +182,6 @@ test = (SLSAPI)->
             console.log res.body
           )
         
-    describe "Notebook", ->
-      api =null
-      notebookid=0
-
-      before (done)->
-        conf = {}
-        api = new SLSAPI(conf)
-        api.on SLSAPI.Config.EVENT_READY, (id)->
-          done()
-
-      it 'should get notebook by name', (done)->
-        ok = (notebook) ->
-          if notebook[0].name == 'mapas'
-            notebookid = notebook[0].id
-            done()
-        api.notebook.getByName('mapas', ok,(err)->console.log err.response)
-
-      it 'should get notebook by id', (done)->
-        ok = (notebook) ->
-          if notebook.id == notebookid
-            done()
-        api.notebook.getById(notebookid, ok,(err)->console.log err.response)
-
     describe 'DataPool', ->
       before (done)->
         conf = {}
@@ -199,7 +207,7 @@ test = (SLSAPI)->
             ]
           }
           api.config.parseOpcoes(conf,true)
-          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
           dataPool.loadAllData()
           api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
@@ -215,7 +223,7 @@ test = (SLSAPI)->
             ]
             }
           api.config.parseOpcoes(conf,true)
-          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
           dataPool.loadAllData()
           api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
@@ -235,7 +243,7 @@ test = (SLSAPI)->
             ]
             }
           api.config.parseOpcoes(conf,true)
-          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
           dataPool.loadOneData(1)
           api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
@@ -247,13 +255,13 @@ test = (SLSAPI)->
         it 'should load data from cache with forceImport=True', (done)->
           @timeout(10000)
           conf = {
-            noteid:'55600321ea74f1fd413093b0' # noteid portoalegre.json
+            id:'5567935895b248224048e517' # mashupid portoalegre.json
             dataSources: [
               url:"http://wrong/note/" # proposital wrong url to prove who load from cache ... 
               func_code: "function (item){return null}" # proposital wrong funciton
               ]}
           api.config.parseOpcoes(conf,true)
-          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
           dataPool.loadAllData(true) # force true 
           api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
@@ -271,7 +279,7 @@ test = (SLSAPI)->
               ]}
           api.config.parseOpcoes(conf,true)
      
-          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
           dataPool.loadAllData(true) # force true 
 
           api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
@@ -289,7 +297,7 @@ test = (SLSAPI)->
               func_code: "function (item){return item}"
             ]           }
           api.config.parseOpcoes(conf,true)
-          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
           dataPool.loadAllData()
           api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
@@ -308,7 +316,7 @@ test = (SLSAPI)->
               } "
             ]           }
           api.config.parseOpcoes(conf,true)
-          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
           dataPool.loadAllData()
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
             datapool.dataSources[0].notes.length.should.equal(1411)
@@ -325,7 +333,7 @@ test = (SLSAPI)->
             ]
           }
           api.config.parseOpcoes(configGoogle,true)
-          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
           dataPool.loadAllData()
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
             datapool.dataSources[0].notes.length.should.equal(5)
@@ -341,7 +349,7 @@ test = (SLSAPI)->
               func_code: "function convert_item_pac(item){\n        item_convertido = {}\n        //console.log('1');\n        //console.log(item_convertido);\n        if ((item.val_lat) && (item.val_long)&&(item.val_lat.length > 0) && (item.val_long.length > 0)){\n        latlog = dms2decPTBR(item.val_lat,item.val_long)\n        //if (isNaN(latlog[0]) || isNaN(latlog[1])){\n        //    return null;\n      //  }\n        item_convertido.longitude = \"\"+latlog[1]\n        item_convertido.latitude = \"\" +latlog[0]\n        item_convertido.texto = item.dsc_titulo\n        item_convertido.cat = item.idn_estagio+\"%\";\n         }else{\n             return null;\n             }\n        //console.log(item_convertido);\n        //item_convertido.cat = item.cause.category_name\n        //item_convertido.icon = Icones[item_convertido.cat_id]\n        return item_convertido \n    }"
             ]
           api.config.parseOpcoes(configCSV,true)
-          dataPool = SLSAPI.dataPool.createDataPool(api.config)
+          dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
           dataPool.loadAllData()
 
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
