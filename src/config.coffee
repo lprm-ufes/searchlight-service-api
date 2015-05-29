@@ -43,7 +43,10 @@ class Config
     if configInstance.parseOpcoes
       configInstance.parseOpcoes(@opcoes)
     @children.push(configInstance)
-    
+
+  unregister: (instance)->
+    i = @children.indexOf(instance)
+    @children.splice(i,1)
 
   toJSON: ->
     json = {

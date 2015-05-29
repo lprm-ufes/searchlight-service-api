@@ -242,15 +242,15 @@ Config = (function() {
   }
 
   Config.prototype.parseOpcoes = function(opcoes, view) {
-    var child, i, len, ref, results;
+    var child, j, len, ref, results;
     this.opcoes = new utils.Dicionario(opcoes);
     this.serverURL = this.opcoes.get('serverURL', this.serverURL || 'http://sl.wancharle.com.br');
     this.notebookURL = this.opcoes.get('notebookURL', this.notebookURL || (this.serverURL + "/notebook/"));
     this.storageNotebook = this.opcoes.get('storageNotebook', '');
     ref = this.children;
     results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      child = ref[i];
+    for (j = 0, len = ref.length; j < len; j++) {
+      child = ref[j];
       results.push(child.parseOpcoes(this.opcoes));
     }
     return results;
@@ -263,15 +263,21 @@ Config = (function() {
     return this.children.push(configInstance);
   };
 
+  Config.prototype.unregister = function(instance) {
+    var i;
+    i = this.children.indexOf(instance);
+    return this.children.splice(i, 1);
+  };
+
   Config.prototype.toJSON = function() {
-    var child, i, json, len, ref;
+    var child, j, json, len, ref;
     json = {
       'storageNotebook': this.coletorNotebookId,
       'noteid': this.noteid
     };
     ref = this.children;
-    for (i = 0, len = ref.length; i < len; i++) {
-      child = ref[i];
+    for (j = 0, len = ref.length; j < len; j++) {
+      child = ref[j];
       json = utils.merge(json, child.toJSON());
     }
     return JSON.parse(JSON.stringify(json));
@@ -438,6 +444,7 @@ DataPool = (function() {
   };
 
   DataPool.prototype.destroy = function() {
+    this.config.unregister(this);
     events.off(this.config.id, DataSource.EVENT_LOADED);
     events.off(this.config.id, DataPool.EVENT_LOAD_START);
     return events.off(this.config.id, DataPool.EVENT_LOAD_STOP);
@@ -582,7 +589,9 @@ DataSource = (function() {
   };
 
   DataSource.prototype.canLoadFromCache = function(mashup) {
-    return mashup.useCache && this.url.indexOf(mashup.config.serverURL) === -1;
+    var can;
+    can = mashup.useCache && this.url.indexOf(mashup.config.serverURL) === -1;
+    return can;
   };
 
   DataSource.prototype.load = function(mashup, force) {
@@ -641,7 +650,7 @@ DataSource = (function() {
         return _this.onDataLoaded(json, _this.cachedSource, mashup);
       };
     })(this));
-    return xhr.fail(function(err) {
+    return xhr.fail(function(err, res) {
       return events.trigger(mashup.config.id, DataSource.EVENT_REQUEST_FAIL, err);
     });
   };
@@ -903,7 +912,7 @@ Mashup = (function() {
     this.createURL = this.opcoes.get('mashupCreateURL', this.createURL || (this.config.serverURL + "/mashup/create/"));
     this.readURL = this.opcoes.get('mashupReadURL', this.readURL || (this.config.serverURL + "/mashup/"));
     this.updateURL = this.opcoes.get('mashupUpdateURL', this.updateURL || (this.config.serverURL + "/mashup/update/"));
-    this.cacheURL = this.opcoes.get('mashupCacheURL', this.cacheURL || (this.config.serverURL + "/note/getCachedURL"));
+    this.cacheURL = this.opcoes.get('mashupCacheURL', this.cacheURL || (this.config.serverURL + "/mashup/getCachedURL"));
     this.title = this.opcoes.get('title', this.title || '');
     this.id = this.opcoes.get('id', this.id || '');
     if (this.id) {

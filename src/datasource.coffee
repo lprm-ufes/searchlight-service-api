@@ -101,7 +101,8 @@ class DataSource
 
     # if mashup have a useCache=true then the api have access to a service cache
     # and if url is not the same of cache server then the datasoruce can load from cache
-    return (mashup.useCache  and @url.indexOf(mashup.config.serverURL)== -1)
+    can= (mashup.useCache  and @url.indexOf(mashup.config.serverURL)== -1)
+    return can
     
 
   load: (mashup,force="") ->
@@ -110,7 +111,8 @@ class DataSource
       if @cachedURL
         @loadFromCache(mashup)
       else
-        @getCachedURL(mashup,force,()=>@loadFromCache(mashup))
+        @getCachedURL(mashup,force,()=> 
+          @loadFromCache(mashup))
     else
       @loadData(mashup)
 
@@ -134,13 +136,13 @@ class DataSource
         json = JSON.parse(res.text)
       @onDataLoaded(json,@cachedSource,mashup)
 
-    xhr.fail (err)-> events.trigger(mashup.config.id,DataSource.EVENT_REQUEST_FAIL,err)
+    xhr.fail (err,res)-> 
+      events.trigger(mashup.config.id,DataSource.EVENT_REQUEST_FAIL,err)
    
   # Gets a cached url for that datasource                                                                                                           
   # Data from original url is imported to server who offers a cached version with option to filtering 
   getCachedURL: (mashup,forceImport="",cb)->
     url ="#{mashup.cacheURL}?mashupid=#{mashup.id}&fonteIndex=#{@index}&forceImport=#{forceImport}"
-
     xhr = ajax.get(url,{type:'json'})
     xhr.done (res)=>
           @cachedURL = res.body.cachedUrl

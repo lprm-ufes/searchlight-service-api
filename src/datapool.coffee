@@ -98,6 +98,8 @@ class DataPool
 
   destroy: ->
     #unregiser all events 
+
+    @config.unregister(@)
     events.off(@config.id,DataSource.EVENT_LOADED)
     events.off(@config.id,DataPool.EVENT_LOAD_START)
     events.off(@config.id,DataPool.EVENT_LOAD_STOP)

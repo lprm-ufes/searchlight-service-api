@@ -8,7 +8,7 @@ class Mashup
     @createURL= @opcoes.get 'mashupCreateURL', @createURL or "#{@config.serverURL}/mashup/create/"
     @readURL= @opcoes.get 'mashupReadURL', @readURL or "#{@config.serverURL}/mashup/"
     @updateURL= @opcoes.get 'mashupUpdateURL', @updateURL or "#{@config.serverURL}/mashup/update/"
-    @cacheURL= @opcoes.get 'mashupCacheURL', @cacheURL or "#{@config.serverURL}/note/getCachedURL"
+    @cacheURL= @opcoes.get 'mashupCacheURL', @cacheURL or "#{@config.serverURL}/mashup/getCachedURL"
 
     @title = @opcoes.get 'title', @title or ''
 
