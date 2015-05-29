@@ -51,7 +51,7 @@ class Config
   toJSON: ->
     json = {
       'storageNotebook':@coletorNotebookId
-      'noteid': @noteid
+      'serverURL':@serverURL
     }
 
     for child in @children

@@ -63,7 +63,7 @@ parseFloatPTBR = (str) ->
   else
     return parseFloat(itens[1])
 
-merge = (deep,target,source)->
+merge = (target,source,deep=true)->
   if CLIENT_SIDE
     if deep
       return $.extend(true,target,source)

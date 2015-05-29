@@ -28,6 +28,8 @@ class User
     User.instances[@config.id] = @
     @storage = localStorage
     @usuario = this.getUsuario()
+    if not @isLogged()
+      @logout()
     @config.register(@)
 
   parseOpcoes: (@opcoes) ->

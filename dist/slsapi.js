@@ -273,7 +273,7 @@ Config = (function() {
     var child, j, json, len, ref;
     json = {
       'storageNotebook': this.coletorNotebookId,
-      'noteid': this.noteid
+      'serverURL': this.serverURL
     };
     ref = this.children;
     for (j = 0, len = ref.length; j < len; j++) {
@@ -925,29 +925,85 @@ Mashup = (function() {
   Mashup.prototype.toJSON = function() {
     return {
       'mashupCreateURL': this.createURL,
-      'mashupReadURL': this.createURL,
-      'mashupUpdateURL': this.createURL,
+      'mashupReadURL': this.readURL,
+      'mashupUpdateURL': this.updateURL,
       'title': this.title,
       'id': this.id
     };
   };
 
-  Mashup.prototype.save = function(success, fail) {
+  Mashup.prototype.get = function(title, user, success, fail) {
+    var xhr;
+    xhr = ajax.get(this.readURL + "?user=" + user + "&title=" + title);
+    xhr.done(function(res) {
+      if (res.body.length === 1 && res.body[0].id) {
+        return success(res.body[0]);
+      } else {
+        return fail('mashup not found');
+      }
+    });
+    return xhr.fail(fail);
+  };
+
+  Mashup.prototype.create = function(json, success, fail) {
     var xhr;
     xhr = ajax.post({
       url: this.createURL,
-      data: this.config.toJSON()
+      data: json
     });
     xhr.done(function(res) {
-      self.parseOpcoes(res.body);
-      return events.trigger(self.id, Config.EVENT_READY);
+      if (res.body.id) {
+        return success(res.body);
+      } else {
+        return fail('mashup not created');
+      }
     });
-    return xhr.fail(function(err) {
-      return events.trigger(self.id, Config.EVENT_FAIL, {
-        err: err,
-        message: 'Error: não foi possível carregar configuração da visualização'
-      });
+    return xhr.fail(fail);
+  };
+
+  Mashup.prototype.update = function(id, json, success, fail) {
+    var xhr;
+    xhr = ajax.post({
+      url: "" + this.updateURL + id + "/",
+      data: json
     });
+    xhr.done(function(res) {
+      if (res.body.id) {
+        return success(res.body);
+      } else {
+        return fail('mashup not updated');
+      }
+    });
+    return xhr.fail(fail);
+  };
+
+  Mashup.prototype["delete"] = function(id, success, fail) {
+    var xhr;
+    xhr = ajax.del("" + this.readURL + id + "/");
+    xhr.done(success);
+    return xhr.fail(fail);
+  };
+
+  Mashup.prototype.save = function(success, fail) {
+    var json;
+    json = this.config.toJSON();
+    if (json.title && json.user) {
+      return this.get(json.title, json.user, (function(_this) {
+        return function(found) {
+          return _this.update(found.id, json, success, fail);
+        };
+      })(this), (function(_this) {
+        return function(err) {
+          if (typeof err === 'string' && err === 'mashup not found') {
+            return _this.create(json, success, fail);
+          } else {
+            return fail(err);
+          }
+        };
+      })(this));
+    } else {
+      return fail("you need a title and logged user to save a mashup");
+    }
   };
 
   return Mashup;
@@ -1300,6 +1356,9 @@ User = (function() {
     User.instances[this.config.id] = this;
     this.storage = localStorage;
     this.usuario = this.getUsuario();
+    if (!this.isLogged()) {
+      this.logout();
+    }
     this.config.register(this);
   }
 
@@ -1481,7 +1540,10 @@ parseFloatPTBR = function(str) {
   }
 };
 
-merge = function(deep, target, source) {
+merge = function(target, source, deep) {
+  if (deep == null) {
+    deep = true;
+  }
   if (CLIENT_SIDE) {
     if (deep) {
       return $.extend(true, target, source);

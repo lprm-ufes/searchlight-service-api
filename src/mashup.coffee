@@ -21,23 +21,66 @@ class Mashup
   toJSON:->
     {
       'mashupCreateURL':@createURL
-      'mashupReadURL':@createURL
-      'mashupUpdateURL':@createURL
+      'mashupReadURL':@readURL
+      'mashupUpdateURL':@updateURL
       'title': @title
       'id': @id
     }
 
-  save: (success, fail)->
+  get:(title,user,success,fail)->
+    xhr = ajax.get "#{@readURL}?user=#{user}&title=#{title}"
+    xhr.done((res)->
+      if res.body.length == 1 and res.body[0].id
+        success(res.body[0])
+      else
+        fail('mashup not found'))
+    xhr.fail(fail)
+
+  create: (json,success,fail)->
     xhr = ajax.post {
       url: @createURL
-      data:@config.toJSON()
+      data:json
     }
-    xhr.done (res) ->
-      self.parseOpcoes(res.body)
-      events.trigger(self.id,Config.EVENT_READY)
-    xhr.fail (err)->
-      events.trigger(self.id,Config.EVENT_FAIL,{err:err,message:'Error: não foi possível carregar configuração da visualização'})
+    xhr.done((res)->
+     if res.body.id
+        success(res.body)
+      else
+        fail('mashup not created'))
+    xhr.fail(fail)
 
+  update: (id,json,success,fail)->
+    xhr = ajax.post {
+      url: "#{@updateURL}#{id}/"
+      data:json
+    }
+    xhr.done((res)->
+     if res.body.id
+        success(res.body)
+      else
+        fail('mashup not updated'))
+ 
+    xhr.fail(fail)
+
+
+  delete: (id,success,fail)->
+    xhr = ajax.del "#{@readURL}#{id}/"
+    xhr.done(success)
+    xhr.fail(fail)
+
+  save: (success, fail)->
+    json = @config.toJSON()
+    if json.title and json.user
+      @get(json.title,json.user,
+        (found)=>
+            @update(found.id,json,success,fail)
+        ,(err)=>
+          if typeof err == 'string' and err=='mashup not found'
+            @create(json,success,fail)
+          else
+            fail(err)
+          )
+    else
+      fail("you need a title and logged user to save a mashup")
 
 
 module.exports = {'Mashup':Mashup}

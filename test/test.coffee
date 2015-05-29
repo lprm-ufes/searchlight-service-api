@@ -1,3 +1,8 @@
+genericFail = (err)->
+  if typeof err == 'string'
+    console.log err
+  else
+    console.log err.response.body
 
 test = (SLSAPI)->
   describe "SLSAPI", ->
@@ -42,19 +47,7 @@ test = (SLSAPI)->
           api.config.toJSON().should.have.property('dataSources')
           done()
 
-      it 'should allow store the api settings to mashup on storageService',(done)->
-        # criar nova collection no servidor para representar as configuracoes em vez de usar a propria nota...
-        # comentar sobre isso no tcc...
-        mashupTitle = 'teste de salvamento de conf'
-
-        success = (url)->
-          done()
-        fail = (err)->
-          console.log(err.response.body)
-        api.config.save(title,success, fail)
-
-
-    describe "User", (doneuser)->
+    describe "User", ->
       api =null
       before (done)->
         conf = {}
@@ -92,6 +85,42 @@ test = (SLSAPI)->
             api2.user.logout()
             api2.on SLSAPI.User.EVENT_LOGOUT_FAIL, (req)->
               done()
+
+    describe "Mashup", ->
+      api = null
+      updated_at = ''
+      before (done)->
+        conf = {mashup:true}
+        api = new SLSAPI(conf)
+        api.on SLSAPI.Config.EVENT_READY, (id)->
+          api.user.login('wan','123456')
+          api.on(SLSAPI.User.EVENT_LOGIN_FINISH,(err)->
+            done())
+
+      it 'should allow to create a mashup on storageService',(done)->
+        api.mashup.title = 'teste de salvamento de conf'
+        success = (mashupSaved)->
+          updated_at = mashupSaved.updatedAt
+          done()
+        api.mashup.save(success,genericFail)
+
+      it 'should allow to update a mashup on storageService',(done)->
+        api.mashup.title = 'teste de salvamento de conf'
+        success = (mashupSaved)->
+          mashupSaved.updatedAt.should.not.equal(updated_at)
+          done()
+        api.mashup.save(success,genericFail)
+
+      it 'should allow to delete a mashup on storageService',(done)->
+        api.mashup.title = 'teste de salvamento de conf'
+        success = (url)->
+          done()
+        api.mashup.get(api.mashup.title,api.user.user_id
+          ,(found)->
+            api.mashup.delete(found.id,success, genericFail)
+          ,genericFail)
+
+
 
     describe "Notebook", ->
       api =null
