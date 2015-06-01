@@ -245,8 +245,6 @@ Config = (function() {
     var child, j, len, ref, results;
     this.opcoes = new utils.Dicionario(opcoes);
     this.serverURL = this.opcoes.get('serverURL', this.serverURL || 'http://sl.wancharle.com.br');
-    this.notebookURL = this.opcoes.get('notebookURL', this.notebookURL || (this.serverURL + "/notebook/"));
-    this.storageNotebook = this.opcoes.get('storageNotebook', '');
     ref = this.children;
     results = [];
     for (j = 0, len = ref.length; j < len; j++) {
@@ -352,6 +350,7 @@ DataPool = (function() {
       s = ref[index];
       this.addDataSource(s);
     }
+    events.off(this.config.id, DataSource.EVENT_LOADED);
     return events.on(this.config.id, DataSource.EVENT_LOADED, (function(_this) {
       return function() {
         return _this.onDataSourceLoaded();
@@ -398,8 +397,8 @@ DataPool = (function() {
     return this.dataSources;
   };
 
-  DataPool.prototype.updateFonte = function(url, func_code, index) {
-    return this.dataSources[index] = createDataSource(url, func_code);
+  DataPool.prototype.updateDataSource = function(url, func_code, index) {
+    return this.dataSources[index] = createDataSource(url, func_code, index);
   };
 
   DataPool.prototype.getDataSource = function(i) {
@@ -980,7 +979,13 @@ Mashup = (function() {
   Mashup.prototype["delete"] = function(id, success, fail) {
     var xhr;
     xhr = ajax.del("" + this.readURL + id + "/");
-    xhr.done(success);
+    xhr.done(function(res) {
+      if (res.body.id) {
+        return success(res.body);
+      } else {
+        return fail('mashup not deleted');
+      }
+    });
     return xhr.fail(fail);
   };
 
@@ -1028,17 +1033,47 @@ Notebook = (function() {
     return this.instances[config.id];
   };
 
+  Notebook.prototype.parseOpcoes = function(opcoes) {
+    this.opcoes = opcoes;
+    this.createURL = this.opcoes.get('notebookCreateURL', this.createURL || (this.config.serverURL + "/notebook/create/"));
+    this.readURL = this.opcoes.get('notebookReadURL', this.readURL || (this.config.serverURL + "/notebook/"));
+    return this.updateURL = this.opcoes.get('notebookUpdateURL', this.updateURL || (this.config.serverURL + "/notebook/update/"));
+  };
+
+  Notebook.prototype.toJSON = function() {
+    return {
+      notebookCreateURL: this.createURL,
+      notebookReadURL: this.readURL
+    };
+  };
+
   function Notebook(config) {
     Notebook.instances[config.id] = this;
     this.config = config;
+    this.config.register(this);
   }
+
+  Notebook.prototype.get = function(callback, callbackFail) {
+    var url, xhr;
+    if (callbackFail == null) {
+      callbackFail = null;
+    }
+    url = "" + this.readURL;
+    xhr = ajax.get(url);
+    xhr.done(function(res) {
+      return callback(res.body);
+    });
+    return xhr.fail(function(err) {
+      return callbackFail(err);
+    });
+  };
 
   Notebook.prototype.getByName = function(notebookName, callback, callbackFail) {
     var url, xhr;
     if (callbackFail == null) {
       callbackFail = null;
     }
-    url = this.config.notebookURL + "?name=" + notebookName;
+    url = this.readURL + "?name=" + notebookName;
     xhr = ajax.get(url);
     xhr.done(function(res) {
       return callback(res.body);
@@ -1053,7 +1088,7 @@ Notebook = (function() {
     if (callbackFail == null) {
       callbackFail = null;
     }
-    url = this.config.notebookURL + "?id=" + notebookId;
+    url = this.readURL + "?id=" + notebookId;
     xhr = ajax.get(url);
     xhr.done(function(res) {
       return callback(res.body);
@@ -1061,6 +1096,53 @@ Notebook = (function() {
     return xhr.fail(function(err) {
       return callbackFail(err);
     });
+  };
+
+  Notebook.prototype.create = function(nbname, success, fail) {
+    var xhr;
+    xhr = ajax.post({
+      url: this.createURL,
+      data: {
+        name: nbname
+      }
+    });
+    xhr.done(function(res) {
+      if (res.body.id) {
+        return success(res.body);
+      } else {
+        return fail('notebook not created');
+      }
+    });
+    return xhr.fail(fail);
+  };
+
+  Notebook.prototype.update = function(id, json, success, fail) {
+    var xhr;
+    xhr = ajax.post({
+      url: "" + this.updateURL + id + "/",
+      data: json
+    });
+    xhr.done(function(res) {
+      if (res.body.id) {
+        return success(res.body);
+      } else {
+        return fail('notebook not updated');
+      }
+    });
+    return xhr.fail(fail);
+  };
+
+  Notebook.prototype["delete"] = function(id, success, fail) {
+    var xhr;
+    xhr = ajax.del("" + this.readURL + id + "/");
+    xhr.done(function(res) {
+      if (res.body.id) {
+        return success(res.body);
+      } else {
+        return fail('notebook not deleted');
+      }
+    });
+    return xhr.fail(fail);
   };
 
   return Notebook;
@@ -1107,14 +1189,16 @@ Notes = (function() {
     this.opcoes = opcoes;
     this.createURL = this.opcoes.get('notesCreateURL', this.createURL || (this.config.serverURL + "/note/create/"));
     this.readURL = this.opcoes.get('notesReadURL', this.readURL || (this.config.serverURL + "/note/"));
-    return this.updateURL = this.opcoes.get('notesUpdateURL', this.updateURL || (this.config.serverURL + "/note/update/"));
+    this.updateURL = this.opcoes.get('notesUpdateURL', this.updateURL || (this.config.serverURL + "/note/update/"));
+    return this.storageNotebook = this.opcoes.get('storageNotebook', '');
   };
 
   Notes.prototype.toJSON = function() {
     return {
       notesCreateURL: this.createURL,
       notesReadURL: this.readURL,
-      notesUpdateURL: this.updateURL
+      notesUpdateURL: this.updateURL,
+      storageNotebook: this.storageNotebook
     };
   };
 
@@ -1188,11 +1272,11 @@ Notes = (function() {
       callback_fail = (function() {});
     }
     if (!notebookId) {
-      if (!this.config.storageNotebook) {
+      if (!this.storageNotebook) {
         console.error('NotebookId não foi informado!');
         return;
       } else {
-        notebookId = this.config.storageNotebook;
+        notebookId = this.storageNotebook;
       }
     }
     params = note;

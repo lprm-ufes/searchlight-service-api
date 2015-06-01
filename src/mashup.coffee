@@ -11,7 +11,6 @@ class Mashup
     @cacheURL= @opcoes.get 'mashupCacheURL', @cacheURL or "#{@config.serverURL}/mashup/getCachedURL"
 
     @title = @opcoes.get 'title', @title or ''
-
     @id = @opcoes.get 'id', @id or ''
     if @id
       @useCache = true
@@ -64,7 +63,11 @@ class Mashup
 
   delete: (id,success,fail)->
     xhr = ajax.del "#{@readURL}#{id}/"
-    xhr.done(success)
+    xhr.done((res)->
+     if res.body.id
+        success(res.body)
+      else
+        fail('mashup not deleted'))
     xhr.fail(fail)
 
   save: (success, fail)->

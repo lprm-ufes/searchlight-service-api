@@ -30,10 +30,6 @@ class Config
   parseOpcoes: (opcoes,view)->
     @opcoes = new utils.Dicionario(opcoes)
     @serverURL = @opcoes.get 'serverURL', @serverURL or 'http://sl.wancharle.com.br'
-
-    @notebookURL = @opcoes.get 'notebookURL', @notebookURL or "#{@serverURL}/notebook/"
-
-    @storageNotebook = @opcoes.get 'storageNotebook', ''
     
     # do parseOpcoes in children
     for child in @children

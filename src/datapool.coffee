@@ -41,6 +41,7 @@ class DataPool
       @addDataSource(s)
 
     # bind counter function to count DataSources loaded
+    events.off(@config.id,DataSource.EVENT_LOADED)
     events.on(@config.id,DataSource.EVENT_LOADED,()=>
         @onDataSourceLoaded()
     )
@@ -67,8 +68,8 @@ class DataPool
   getDataSources:() ->
     return @dataSources
 
-  updateFonte: (url,func_code, index) ->
-    @dataSources[index] = createDataSource(url,func_code)
+  updateDataSource: (url,func_code, index) ->
+    @dataSources[index] = createDataSource(url,func_code,index)
 
   getDataSource: (i) ->
     return @dataSources[i]

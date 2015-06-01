@@ -14,23 +14,23 @@ test = (SLSAPI)->
         api.constructor.name.should.equal 'SLSAPI'
 
     describe "Config", ->
-      it "should to trigger a Config.EVENT_READY for a successful configuration", (done)->
-        conf = {urlConfServico:'http://sl.wancharle.com.br/note/555502050829091e5f7cf72c'}
+      it "should triggering a Config.EVENT_READY for a successful configuration", (done)->
+        conf = {urlConfServico:'http://sl.wancharle.com.br/mashup/5567935895b248224048e517'}
         api = new SLSAPI(conf)
         api.on SLSAPI.Config.EVENT_READY, (id)->
           done()
 
-      it "should to trigger a Config.EVENT_FAIL for a failure in configuration", (done)->
-        apif = new SLSAPI({urlConfServico:'http://wrongsite/notebook/5514580391f57bdf0d0ba65b'})
+      it "should triggering a Config.EVENT_FAIL for a failure in configuration", (done)->
+        apif = new SLSAPI({urlConfServico:'http://wrongsite/mashup/5514580391f57bdf0d0ba65b'})
 
         apif.on SLSAPI.Config.EVENT_FAIL, (id)->
           done()
 
-      it "should have a storageNotebook after parseOpcoes with a urlConfServico option" , (done)->
-        conf = {urlConfServico:'http://sl.wancharle.com.br/note/555502050829091e5f7cf72c'}
+      it "should have a mashup id after parseOpcoes with a urlConfServico option" , (done)->
+        conf = {urlConfServico:'http://sl.wancharle.com.br/mashup/5567935895b248224048e517'}
         api = new SLSAPI(conf)
         api.on SLSAPI.Config.EVENT_READY, (id)->
-          api.config.storageNotebook.should.equal('5514580391f57bdf0d0ba65b')
+          api.mashup.id.should.equal('5567935895b248224048e517')
           done()
 
       it "should generate config from children classes like datapool", (done)->
@@ -56,7 +56,7 @@ test = (SLSAPI)->
           done()
 
       describe "login", ->
-        it "should allow to login a user with correct credentials", (done)->
+        it "should allow login a user with correct credentials", (done)->
           api.user.login('wan','123456')
           api.on(SLSAPI.User.EVENT_LOGIN_FINISH,(err)->
             done())
@@ -64,14 +64,14 @@ test = (SLSAPI)->
         it "and save the logged user to localStorage", ->
           api.user.getUsuario().should.equal('wan')
         
-        it "should to trigger User.EVENT_LOGIN_FAIL for incorrect credentials", (done)->
+        it "should triggering User.EVENT_LOGIN_FAIL for incorrect credentials", (done)->
           api.user.login('wan','nopassword')
           api.on(SLSAPI.User.EVENT_LOGIN_FAIL,(req)->
             req.response.body.error.should.equal('Invalid password')
             done())
  
       describe "logout", ->
-        it "should allow to logout a logged user", (done)->
+        it "should allow logout a logged user", (done)->
           api.user.logout()
           api.on SLSAPI.User.EVENT_LOGOUT_SUCCESS, ()-> done()
 
@@ -85,7 +85,58 @@ test = (SLSAPI)->
             api2.user.logout()
             api2.on SLSAPI.User.EVENT_LOGOUT_FAIL, (req)->
               done()
+      
+    describe "Notebook", ->
+      api =null
+      notebookid=0
 
+      before (done)->
+        conf = {}
+        api = new SLSAPI(conf)
+        api.on SLSAPI.Config.EVENT_READY, (id)->
+          api.user.login('wan','123456')
+          api.on(SLSAPI.User.EVENT_LOGIN_FINISH,(err)->
+            done())
+
+      it 'should allow creating a notebook on StorageService', (done) ->
+        ok = (notebook) ->
+          if notebook.name == 'notebook teste'
+            notebookid =  notebook.id
+            done()
+        api.notebook.create('notebook teste', ok, genericFail)
+
+      it 'should allow reading a notebook by name', (done)->
+        ok = (notebook) ->
+          if notebook[0].name == 'notebook teste'
+            notebookid = notebook[0].id
+            done()
+        api.notebook.getByName('notebook teste', ok,(err)->console.log err.response)
+
+      it 'should allow reading a notebook by id', (done)->
+        ok = (notebook) ->
+          if notebook.id == notebookid
+            done()
+        api.notebook.getById(notebookid, ok,(err)->console.log err.response)
+
+      it 'should allow updating a notebook on StorageService', (done) ->
+        ok = (notebook) ->
+          if notebook.name == 'notebook updated'
+            done()
+        api.notebook.getByName('notebook updated'
+          ,(notebook)->
+            api.notebook.update(notebookid,{name: 'notebook updated'}, ok, genericFail)
+          ,genericFail)
+ 
+      it  'should allow deleting a notebook on StorageService', (done) ->
+        ok = (notebook) ->
+          if notebook.name == 'notebook updated'
+            done()
+        api.notebook.getByName('notebook updated'
+          ,(notebook)->
+            api.notebook.delete(notebook[0].id, ok, genericFail)
+          ,genericFail)
+        
+ 
     describe "Mashup", ->
       api = null
       updated_at = ''
@@ -97,21 +148,32 @@ test = (SLSAPI)->
           api.on(SLSAPI.User.EVENT_LOGIN_FINISH,(err)->
             done())
 
-      it 'should allow to create a mashup on storageService',(done)->
+      it 'should allow creating a mashup on storageService',(done)->
         api.mashup.title = 'teste de salvamento de conf'
         success = (mashupSaved)->
           updated_at = mashupSaved.updatedAt
           done()
         api.mashup.save(success,genericFail)
 
-      it 'should allow to update a mashup on storageService',(done)->
+      it 'should allow updating a mashup on storageService',(done)->
         api.mashup.title = 'teste de salvamento de conf'
         success = (mashupSaved)->
           mashupSaved.updatedAt.should.not.equal(updated_at)
           done()
         api.mashup.save(success,genericFail)
 
-      it 'should allow to delete a mashup on storageService',(done)->
+      it 'should allow associating a notebook with the mashup', (done)->
+        api.notebook.get((notebooks)->
+          id = notebooks[0].id
+          api.notes.storageNotebook = id
+          success = (mashupSaved)->
+           mashupSaved.storageNotebook.id.should.equal(id)
+           done()
+          api.mashup.save(success,genericFail)
+        ,genericFail)
+
+
+      it 'should allow deleting a mashup on storageService',(done)->
         api.mashup.title = 'teste de salvamento de conf'
         success = (url)->
           done()
@@ -120,30 +182,7 @@ test = (SLSAPI)->
             api.mashup.delete(found.id,success, genericFail)
           ,genericFail)
 
-
-
-    describe "Notebook", ->
-      api =null
-      notebookid=0
-
-      before (done)->
-        conf = {}
-        api = new SLSAPI(conf)
-        api.on SLSAPI.Config.EVENT_READY, (id)->
-          done()
-
-      it 'should get notebook by name', (done)->
-        ok = (notebook) ->
-          if notebook[0].name == 'mapas'
-            notebookid = notebook[0].id
-            done()
-        api.notebook.getByName('mapas', ok,(err)->console.log err.response)
-
-      it 'should get notebook by id', (done)->
-        ok = (notebook) ->
-          if notebook.id == notebookid
-            done()
-        api.notebook.getById(notebookid, ok,(err)->console.log err.response)
+     
 
     describe "Notes", ->
       api =null
@@ -157,7 +196,7 @@ test = (SLSAPI)->
             done()
 
 
-      it "should allow to add notes to logged user", (done)->
+      it "should allow creating the notes for a logged user", (done)->
         ob = {}
         ob.comentarios = "test-addnote"
         ob.categoria = "test"
@@ -169,7 +208,7 @@ test = (SLSAPI)->
           noteAdded = res.id
           done()
 
-      it 'should allow to get notes by query', (done)->
+      it 'should allow reading the notes by query', (done)->
         api.notes.getByQuery(
           'comentarios=test-addnote'
           ,(notes)->
@@ -179,7 +218,7 @@ test = (SLSAPI)->
           ,(err)->
               console.log(err))
 
-      it 'should allow to get notes by user', (done)->
+      it 'should allow reading the notes by user', (done)->
         api.notes.getByUser(
           api.user.user_id
           ,(notes)->
@@ -191,7 +230,7 @@ test = (SLSAPI)->
             console.log err
           )
 
-      it 'should update a note', (done) ->
+      it 'should allow updating a note', (done) ->
         changes = { categoria:'update'}
         ok = (res)->
           api.notes.getByQuery("id="+noteAdded
@@ -203,7 +242,7 @@ test = (SLSAPI)->
         fail = (err) -> console.log err.response
         api.notes.update(noteAdded,changes,ok,fail)
 
-      it 'should allow to del note owned by logged user', (done)->
+      it 'should allow deleting a note owned by logged user', (done)->
         api.notes.delete(noteAdded,(res)->
           if res.body.id
             done()

@@ -22,11 +22,14 @@ class Notes
     @readURL = @opcoes.get 'notesReadURL', @readURL or "#{@config.serverURL}/note/"
     @updateURL = @opcoes.get 'notesUpdateURL', @updateURL or "#{@config.serverURL}/note/update/"
 
+    @storageNotebook = @opcoes.get 'storageNotebook', ''
+
   toJSON: ->
     {
       notesCreateURL:@createURL
       notesReadURL: @readURL
       notesUpdateURL: @updateURL
+      storageNotebook: @storageNotebook
     }
 
   getByUser: (user_id,callback, callback_fail) ->
@@ -56,11 +59,11 @@ class Notes
 
   enviar: (note,notebookId=null, callback_ok=(()->),callback_fail=(()->)) ->
     if not notebookId
-      if not @config.storageNotebook
+      if not @storageNotebook
         console.error('NotebookId não foi informado!')
         return
       else
-        notebookId = @config.storageNotebook
+        notebookId = @storageNotebook
 
 
     params = note
