@@ -1,16 +1,16 @@
 {
   "name": "slsapi.js",
-  "version": "0.0.1",
+  "version": "0.2.1",
   "authors": [
     "wancharle sebastião quirino <wancharle@gmail.com>"
   ],
   "description": "Api de acesso para o searchlight-service",
-  "main": "./dist/slsapi.js",
+  "main": "./dist/slsapi.min.js",
   "keywords": [
     "searchlight",
     "api",
     "service"
-  ],
+  ]i,
   "license": "MIT",
   "private": true,
   "ignore": [
@@ -22,11 +22,10 @@
   ],
   "devDependencies": {
     "jquery": "~2.1.3"
-  },
-  "dependencies": {
     "blueimp-md5": "~1.1.0",
     "tabletop": "~1.4.0",
     "dms2dec-PTBR.js": "https://github.com/wancharle/dms2dec.js.git#~1.0.4",
-    "papaparse": "~4.1.1"
+    "papaparse": "~4.1.1",
+    "superagent": "~1.2.0"
   }
 }

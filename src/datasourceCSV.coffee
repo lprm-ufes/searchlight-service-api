@@ -19,18 +19,24 @@ if not isRunningOnBrowser
       )
 else
   # Clientside definitions
-  csvParse = Papa
+  if typeof Papa == 'undefined'
+    csvParse = null
+  else
+    csvParse = Papa 
 
   class DataSourceCSV extends DataSource
     loadData: (config)->
-      csvParse.parse(@url, {
-        header:true,
-        download: true,
-        error: ()=> alert("Erro ao baixar arquivo csv da fonte de dados:\n#{@url}"),
-        complete: (results, file) =>
-          @onDataLoaded(results['data'],@,config)
-        }
-      )
+      if csvParse
+        csvParse.parse(@url, {
+          header:true,
+          download: true,
+          error: ()=> alert("Erro ao baixar arquivo csv da fonte de dados:\n#{@url}"),
+          complete: (results, file) =>
+            @onDataLoaded(results['data'],@,config)
+          }
+        )
+      else
+        console.error('error: CSV format not suported in core-version. Download the full version bundle') 
 
    
 module.exports = {DataSourceCSV:DataSourceCSV}

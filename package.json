@@ -1,19 +1,22 @@
 {
   "name": "slsapi",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Api para utilização dos recursos do searchlight-service",
   "main": "lib/slsapi.js",
   "browser": {
-    "lib/slsapi.js": "dist/slsapi.js"
+    "lib/slsapi.js": "dist/slsapi.min.js"
   },
   "scripts": {
     "test": "mocha --compilers coffee:coffee-script/register ./test/node.coffee ",
-    "compile": "npm run cnode && npm run cweb && npm run csuper && npm run ctests && npm run test ",
+    "compile": "npm run cnode &&  npm run ctests && npm run test ",
     "cnode": "coffee --output lib --compile src",
     "csuper": "browserify -r superagent > ./build/superagent.js",
-    "cweb": "browserify --no-bundle-external --extension='.coffee'  -t coffeeify ./src/slsapi.coffee > ./dist/slsapi.js",
-    "ctests": "browserify --extension='.coffee'  --no-bundle-external -t coffeeify ./test/test.coffee > ./dist/test.js",
-    "cweb:debug": "browserify  --extension='.coffee' -d -t coffeeify ./src/slsapi.coffee > ./dist/slsapi.js"
+    "min": "uglifyjs ./build/slsapi.js > ./dist/slsapi.min.js",
+    "min-core": "uglifyjs ./build/core.js > ./dist/slsapi-core.min.js",
+    "concat": "npm run concat-core ; cat ./bower_components/papaparse/papaparse.min.js ./build/core.js > ./build/slsapi.js",
+    "concat-core": "cat ./build/superagent.js ./bower_components/tabletop/src/tabletop.js ./node_modules/dms2dec-ptbr/dms2dec.js ./bower_components/blueimp-md5/js/md5.min.js ./build/bundle.js > ./build/core.js",
+    "bundle": "npm run compile;browserify  --no-bundle-external ./lib/slsapi.js -o ./build/bundle.js; npm run concat;npm run min;npm run min-core",
+    "ctests": "browserify --extension='.coffee'  --no-bundle-external -t coffeeify ./test/test.coffee > ./dist/test.js"
   },
   "repository": {
     "type": "git",
@@ -32,7 +35,8 @@
     "chai": "^2.3.0",
     "coffee-script": "^1.9.2",
     "coffeeify": "^1.1.0",
-    "mocha": "^2.2.4"
+    "mocha": "^2.2.4",
+    "uglifyjs": "^2.4.10"
   },
   "dependencies": {
     "babyparse": "^0.4.3",
