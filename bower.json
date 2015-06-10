@@ -10,7 +10,7 @@
     "searchlight",
     "api",
     "service"
-  ]i,
+  ],
   "license": "MIT",
   "private": true,
   "ignore": [
