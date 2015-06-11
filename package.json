@@ -1,6 +1,6 @@
 {
   "name": "slsapi",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Api para utilização dos recursos do searchlight-service",
   "main": "lib/slsapi.js",
   "browser": {
@@ -15,7 +15,8 @@
     "min-core": "uglifyjs ./build/core.js > ./dist/slsapi-core.min.js",
     "concat": "npm run concat-core ; cat ./bower_components/papaparse/papaparse.min.js ./build/core.js > ./build/slsapi.js",
     "concat-core": "cat ./build/superagent.js ./bower_components/tabletop/src/tabletop.js ./node_modules/dms2dec-ptbr/dms2dec.js ./bower_components/blueimp-md5/js/md5.min.js ./build/bundle.js > ./build/core.js",
-    "bundle": "npm run compile;browserify  --no-bundle-external ./lib/slsapi.js -o ./build/bundle.js; npm run concat;npm run min;npm run min-core",
+    "bundle": "npm run compile;browserify  --no-bundle-external ./lib/slsapi.js -o ./build/bundle.js; npm run concat;npm run dist;npm run min;npm run min-core",
+    "dist": "cp ./build/slsapi.js ./dist/slsapi.js",
     "ctests": "browserify --extension='.coffee'  --no-bundle-external -t coffeeify ./test/test.coffee > ./dist/test.js"
   },
   "repository": {
