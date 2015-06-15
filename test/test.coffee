@@ -188,7 +188,7 @@ test = (SLSAPI)->
       api =null
       noteAdded = '555275afe3a4c71a6d9605b2'
       before (done)->
-        conf = {urlConfServico:'http://sl.wancharle.com.br/note/555502050829091e5f7cf72c'}
+        conf = {urlConfServico:'http://sl.wancharle.com.br/mashup/update/557f2f148e74a5591a32ae13'}
         api = new SLSAPI(conf)
         api.on SLSAPI.Config.EVENT_READY, (id)->
           api.user.login('wan','123456')
