@@ -36,6 +36,7 @@ SLSAPI.User = User
 SLSAPI.dataPool = dataPool
 SLSAPI.ajax = ajax
 SLSAPI.utils = utils
+SLSAPI.events = events
 
 
 if isRunningOnBrowser
