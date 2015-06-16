@@ -1,4 +1,5 @@
 isRunningOnBrowser = require('./utils').isRunningOnBrowser
+utils = require('./utils')
 events = require('./events')
 ajax = require('./ajax')
 notes = require('./notes')
@@ -34,6 +35,7 @@ SLSAPI.Notes = notes.Notes
 SLSAPI.User = User
 SLSAPI.dataPool = dataPool
 SLSAPI.ajax = ajax
+SLSAPI.utils = utils
 
 
 if isRunningOnBrowser
