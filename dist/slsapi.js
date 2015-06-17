@@ -3162,7 +3162,7 @@ module.exports = request;
           console.error('NotebookId não foi informado!');
           return;
         } else {
-          notebookId = this.storageNotebook;
+          notebookId = this.storageNotebook.id;
         }
       }
       params = note;

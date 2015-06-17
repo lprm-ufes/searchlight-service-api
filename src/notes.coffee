@@ -63,7 +63,7 @@ class Notes
         console.error('NotebookId não foi informado!')
         return
       else
-        notebookId = @storageNotebook
+        notebookId = @storageNotebook.id
 
 
     params = note
