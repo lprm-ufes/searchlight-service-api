@@ -8,6 +8,7 @@ User  = require('./user').User
 Config  = require('./config').Config
 Mashup  = require('./mashup').Mashup
 dataPool = require('./datapool')
+DataSource = require('./datasource').DataSource
 
 class SLSAPI
   
@@ -34,6 +35,7 @@ SLSAPI.Config = Config
 SLSAPI.Notes = notes.Notes
 SLSAPI.User = User
 SLSAPI.dataPool = dataPool
+SLSAPI.DataSource = DataSource
 SLSAPI.ajax = ajax
 SLSAPI.utils = utils
 SLSAPI.events = events

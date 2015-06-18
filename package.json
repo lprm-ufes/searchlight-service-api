@@ -1,6 +1,6 @@
 {
   "name": "slsapi",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Api para utilização dos recursos do searchlight-service",
   "main": "lib/slsapi.js",
   "browser": {
