@@ -2488,7 +2488,7 @@ module.exports = request;
     DataSource.prototype.loadData = function(mashup, position) {
       var url, xhr;
       if (position) {
-        this.notebookID = this.url.split('notebook=')[0];
+        this.notebookID = this.url.split('notebook=')[1];
         url = DataSource.getNotesReadURLByPosition(mashup, position, this.notebookID);
       } else {
         url = this.url;
