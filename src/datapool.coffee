@@ -75,17 +75,17 @@ class DataPool
     return @dataSources[i]
   
   # load one especific datasource from datasources
-  loadOneData: (fonteIndex,force="") ->
+  loadOneData: (fonteIndex,force="",position) ->
     @loadingOneData = true
     events.trigger(@config.id,DataPool.EVENT_LOAD_START)
-    @dataSources[fonteIndex].load(@mashup,force)
+    @dataSources[fonteIndex].load(@mashup,force,position)
 
   # load all data from datasources
-  loadAllData: (force="") =>
+  loadAllData: (force="",position) =>
     @sourcesLoaded = 0
     events.trigger(@config.id,DataPool.EVENT_LOAD_START)
     for source, i in @dataSources
-      source.load(@mashup,force)
+      source.load(@mashup,force,position)
 
   onDataSourceLoaded: ()->
     if @loadingOneData

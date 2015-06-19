@@ -14,6 +14,11 @@ class DataSource
   @hashItem:(item)->
     return "#{parseFloat(item.latitude).toFixed(7)}#{parseFloat(item.longitude).toFixed(7)}#{utils.md5(JSON.stringify(item))}"
 
+  @getNotesReadURLByPosition: (mashup,position)->
+    url = "#{mashup.config.toJSON().notesReadURL}lista/?limit=100&lat=#{position.latitude}&lng=#{position.longitude}&distance=#{position.distance}"
+    console.log(url)
+    return url
+
   constructor: (url,func_code,i)->
     @index = i
     # process and validate the datasource
@@ -105,20 +110,24 @@ class DataSource
     return can
     
 
-  load: (mashup,force="") ->
+  load: (mashup,force="",position) ->
     @resetData()
     if @canLoadFromCache(mashup)
       if @cachedURL
-        @loadFromCache(mashup)
+        @loadFromCache(mashup,position)
       else
         @getCachedURL(mashup,force,()=> 
-          @loadFromCache(mashup))
+          @loadFromCache(mashup,position))
     else
-      @loadData(mashup)
+      @loadData(mashup,position)
 
   # load data to dataSource from the datasource.url
-  loadData: (mashup) ->
-    xhr = ajax.get(@url,{type:'json'})
+  loadData: (mashup,position) ->
+    if position 
+      url = DataSource.getNotesReadURLByPosition(mashup,position)
+    else
+      url = @url
+    xhr = ajax.get(url,{type:'json'})
     xhr.done (res)=> 
       json = res.body
       if res.type.toLowerCase().indexOf("text") > -1
@@ -127,8 +136,11 @@ class DataSource
 
     xhr.fail (err)-> events.trigger(mashup.config.id,DataSource.EVENT_REQUEST_FAIL,err)
  
-  loadFromCache: (mashup)->
-    url ="#{@cachedURL}&limit=1000 "
+  loadFromCache: (mashup,position)->
+    if position 
+      url ="#{@cachedURL}&limit=100&lat=#{position.latitude}&lng=#{position.longitude}&distance=#{position.distance}"
+    else
+      url ="#{@cachedURL}&limit=1000 "
     xhr = ajax.get(url,{type:'json'})
     xhr.done (res)=>
       json = res.body

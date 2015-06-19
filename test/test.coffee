@@ -356,6 +356,25 @@ test = (SLSAPI)->
             done()
           )
 
+        it.only 'should load data from cache by Position', (done)->
+          @timeout(10000)
+          conf = {
+            id:'5567935895b248224048e517' # mashupid portoalegre.json
+            dataSources: [
+              url:"http://wrong/note/" # proposital wrong url to prove who load from cache ... 
+              func_code: "function (item){return null}" # proposital wrong funciton
+              ]}
+          api.config.parseOpcoes(conf,true)
+          dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
+          dataPool.loadAllData('',{latitude: "-30.0332120622836", longitude: "-51.2299645256614",distance: 150}) # 150metros
+          api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
+          api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
+            datapool.dataSources[0].notes.length.should.equal(7)
+            dataPool.dataSources[0].notes[0].title.should.equal("Gangue antipichação")
+            dataPool.dataSources[0].notes[6].title.should.equal("Sinfonia na Praça da Mariz")
+            done()
+          )
+ 
         it 'should not load data from cache if it already is from a searchlight server', (done)->
           @timeout(10000)
           conf = {

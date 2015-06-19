@@ -2269,16 +2269,16 @@ module.exports = request;
       return this.dataSources[i];
     };
 
-    DataPool.prototype.loadOneData = function(fonteIndex, force) {
+    DataPool.prototype.loadOneData = function(fonteIndex, force, position) {
       if (force == null) {
         force = "";
       }
       this.loadingOneData = true;
       events.trigger(this.config.id, DataPool.EVENT_LOAD_START);
-      return this.dataSources[fonteIndex].load(this.mashup, force);
+      return this.dataSources[fonteIndex].load(this.mashup, force, position);
     };
 
-    DataPool.prototype.loadAllData = function(force) {
+    DataPool.prototype.loadAllData = function(force, position) {
       var i, j, len, ref, results, source;
       if (force == null) {
         force = "";
@@ -2289,7 +2289,7 @@ module.exports = request;
       results = [];
       for (i = j = 0, len = ref.length; j < len; i = ++j) {
         source = ref[i];
-        results.push(source.load(this.mashup, force));
+        results.push(source.load(this.mashup, force, position));
       }
       return results;
     };
@@ -2349,6 +2349,13 @@ module.exports = request;
 
     DataSource.hashItem = function(item) {
       return "" + (parseFloat(item.latitude).toFixed(7)) + (parseFloat(item.longitude).toFixed(7)) + (utils.md5(JSON.stringify(item)));
+    };
+
+    DataSource.getNotesReadURLByPosition = function(mashup, position) {
+      var url;
+      url = (mashup.config.toJSON().notesReadURL) + "lista/?limit=100&lat=" + position.latitude + "&lng=" + position.longitude + "&distance=" + position.distance;
+      console.log(url);
+      return url;
     };
 
     function DataSource(url, func_code, i) {
@@ -2459,29 +2466,34 @@ module.exports = request;
       return can;
     };
 
-    DataSource.prototype.load = function(mashup, force) {
+    DataSource.prototype.load = function(mashup, force, position) {
       if (force == null) {
         force = "";
       }
       this.resetData();
       if (this.canLoadFromCache(mashup)) {
         if (this.cachedURL) {
-          return this.loadFromCache(mashup);
+          return this.loadFromCache(mashup, position);
         } else {
           return this.getCachedURL(mashup, force, (function(_this) {
             return function() {
-              return _this.loadFromCache(mashup);
+              return _this.loadFromCache(mashup, position);
             };
           })(this));
         }
       } else {
-        return this.loadData(mashup);
+        return this.loadData(mashup, position);
       }
     };
 
-    DataSource.prototype.loadData = function(mashup) {
-      var xhr;
-      xhr = ajax.get(this.url, {
+    DataSource.prototype.loadData = function(mashup, position) {
+      var url, xhr;
+      if (position) {
+        url = DataSource.getNotesReadURLByPosition(mashup, position);
+      } else {
+        url = this.url;
+      }
+      xhr = ajax.get(url, {
         type: 'json'
       });
       xhr.done((function(_this) {
@@ -2499,9 +2511,13 @@ module.exports = request;
       });
     };
 
-    DataSource.prototype.loadFromCache = function(mashup) {
+    DataSource.prototype.loadFromCache = function(mashup, position) {
       var url, xhr;
-      url = this.cachedURL + "&limit=1000 ";
+      if (position) {
+        url = this.cachedURL + "&limit=100&lat=" + position.latitude + "&lng=" + position.longitude + "&distance=" + position.distance;
+      } else {
+        url = this.cachedURL + "&limit=1000 ";
+      }
       xhr = ajax.get(url, {
         type: 'json'
       });
