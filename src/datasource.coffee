@@ -124,7 +124,7 @@ class DataSource
   # load data to dataSource from the datasource.url
   loadData: (mashup,position) ->
     if position 
-      @notebookID = @url.split('notebook=')[0]
+      @notebookID = @url.split('notebook=')[1]
       url = DataSource.getNotesReadURLByPosition(mashup,position,@notebookID)
     else
       url = @url
