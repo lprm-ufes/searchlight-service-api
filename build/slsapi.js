@@ -2351,10 +2351,9 @@ module.exports = request;
       return "" + (parseFloat(item.latitude).toFixed(7)) + (parseFloat(item.longitude).toFixed(7)) + (utils.md5(JSON.stringify(item)));
     };
 
-    DataSource.getNotesReadURLByPosition = function(mashup, position) {
+    DataSource.getNotesReadURLByPosition = function(mashup, position, nbID) {
       var url;
-      url = (mashup.config.toJSON().notesReadURL) + "lista/?limit=100&lat=" + position.latitude + "&lng=" + position.longitude + "&distance=" + position.distance;
-      console.log(url);
+      url = (mashup.config.toJSON().notesReadURL) + "lista/?limit=100&notebook=" + nbID + "&lat=" + position.latitude + "&lng=" + position.longitude + "&distance=" + position.distance;
       return url;
     };
 
@@ -2489,7 +2488,8 @@ module.exports = request;
     DataSource.prototype.loadData = function(mashup, position) {
       var url, xhr;
       if (position) {
-        url = DataSource.getNotesReadURLByPosition(mashup, position);
+        this.notebookID = this.url.split('notebook=')[0];
+        url = DataSource.getNotesReadURLByPosition(mashup, position, this.notebookID);
       } else {
         url = this.url;
       }

@@ -14,9 +14,8 @@ class DataSource
   @hashItem:(item)->
     return "#{parseFloat(item.latitude).toFixed(7)}#{parseFloat(item.longitude).toFixed(7)}#{utils.md5(JSON.stringify(item))}"
 
-  @getNotesReadURLByPosition: (mashup,position)->
-    url = "#{mashup.config.toJSON().notesReadURL}lista/?limit=100&lat=#{position.latitude}&lng=#{position.longitude}&distance=#{position.distance}"
-    console.log(url)
+  @getNotesReadURLByPosition: (mashup,position,nbID)->
+    url = "#{mashup.config.toJSON().notesReadURL}lista/?limit=100&notebook=#{nbID}&lat=#{position.latitude}&lng=#{position.longitude}&distance=#{position.distance}"
     return url
 
   constructor: (url,func_code,i)->
@@ -37,6 +36,7 @@ class DataSource
       else
         console.error "Error de configuração de fonte:",{url:url,func_code:func_code}
         @valid = false
+
 
     # store the notes and cache's information
     @resetData()
@@ -124,7 +124,8 @@ class DataSource
   # load data to dataSource from the datasource.url
   loadData: (mashup,position) ->
     if position 
-      url = DataSource.getNotesReadURLByPosition(mashup,position)
+      @notebookID = @url.split('notebook=')[0]
+      url = DataSource.getNotesReadURLByPosition(mashup,position,@notebookID)
     else
       url = @url
     xhr = ajax.get(url,{type:'json'})

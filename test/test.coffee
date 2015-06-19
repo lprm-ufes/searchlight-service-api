@@ -356,7 +356,7 @@ test = (SLSAPI)->
             done()
           )
 
-        it.only 'should load data from cache by Position', (done)->
+        it 'should load data from cache by Position', (done)->
           @timeout(10000)
           conf = {
             id:'5567935895b248224048e517' # mashupid portoalegre.json
