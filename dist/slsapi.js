@@ -2412,20 +2412,18 @@ module.exports = request;
       return this.valid;
     };
 
-    DataSource.prototype._getCatOrCreate = function(i) {
-      var cat, icat, icatId;
-      icat = i.cat;
-      icatId = i.cat_id;
-      if (!icat) {
-        icat = "Sem Categoria";
+    DataSource.prototype._getCatOrCreate = function(catName, catId) {
+      var cat;
+      if (!catName) {
+        catName = "Sem Categoria";
       }
-      cat = this.categories[i.cat];
+      cat = this.categories[catName];
       if (cat) {
         return cat;
       } else {
-        this.categories[icat] = [];
-        this.categories_id[icat] = i.cat_id;
-        return this.categories[icat];
+        this.categories[catName] = [];
+        this.categories_id[catName] = catId;
+        return this.categories[catName];
       }
     };
 
@@ -2451,7 +2449,7 @@ module.exports = request;
         if (geoItem.id_parent) {
           this.addChild(geoItem.id_parent, geoItem);
         }
-        cat = this._getCatOrCreate(geoItem);
+        cat = this._getCatOrCreate(geoItem.cat || geoItem.categoria, geoItem.cat_id);
         cat.push(geoItem);
       }
       return geoItem;

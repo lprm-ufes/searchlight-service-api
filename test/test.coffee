@@ -300,7 +300,7 @@ test = (SLSAPI)->
             done()
           )
 
-        it 'should detect datasource witout categories', (done)->
+        it.only 'should detect datasource witout categories', (done)->
           @timeout( 10000)
           conf = {
             dataSources: [
@@ -312,7 +312,10 @@ test = (SLSAPI)->
           dataPool.loadAllData()
           api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
-            datapool.dataSources[0].categories.should.have.keys('Sem Categoria')
+          
+            console.log(Object.keys(datapool.dataSources[0].categories))#.should.have.keys('Sem Categoria'))
+            datapool.dataSources[0].categories.should.have.any.keys("Sem Categoria")
+            datapool.dataSources[0].notes.length.should.equal(7)
             done()
           )
  

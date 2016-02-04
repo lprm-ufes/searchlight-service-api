@@ -61,19 +61,17 @@ class DataSource
     return @valid
 
   # return or create the list of itens in categorie i.cat
-  _getCatOrCreate: (i)=>
-    icat = i.cat
-    icatId = i.cat_id
-    if not icat
-      icat = "Sem Categoria"
+  _getCatOrCreate: (catName, catId)=>
+    if not catName
+      catName= "Sem Categoria"
 
-    cat=@categories[i.cat]
+    cat=@categories[catName]
     if cat
       return cat
     else
-      @categories[icat] = []
-      @categories_id[icat] = i.cat_id
-      return @categories[icat]
+      @categories[catName] = []
+      @categories_id[catName] = catId
+      return @categories[catName]
 
   # convert, store e taxomize each note 
   addItem : (i,func_convert) =>
@@ -97,7 +95,7 @@ class DataSource
       if geoItem.id_parent
         @addChild(geoItem.id_parent,geoItem)
 
-      cat = @_getCatOrCreate(geoItem)
+      cat = @_getCatOrCreate(geoItem.cat or geoItem.categoria,geoItem.cat_id)
       cat.push(geoItem)
     return geoItem
 
