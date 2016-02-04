@@ -1,10 +1,7 @@
 {
   "name": "slsapi",
-<<<<<<< HEAD
   "version": "0.2.10",
-=======
   "version": "0.2.l0",
->>>>>>> 053f729ca0eb2db9d49b1b6c4df7495aec538d58
   "authors": [
     "wancharle sebastião quirino <wancharle@gmail.com>"
   ],
