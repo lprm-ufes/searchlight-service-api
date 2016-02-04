@@ -66,9 +66,14 @@ class DataSource
     if cat
       return cat
     else
-      @categories[i.cat] = []
-      @categories_id[i.cat] = i.cat_id
-      return @categories[i.cat]
+      icat = i.cat
+      icatId = i.cat_id
+      if not icat
+        icat = "Sem Categoria"
+
+      @categories[icat] = []
+      @categories_id[icat] = i.cat_id
+      return @categories[icat]
 
   # convert, store e taxomize each note 
   addItem : (i,func_convert) =>

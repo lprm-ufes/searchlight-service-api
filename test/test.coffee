@@ -258,6 +258,7 @@ test = (SLSAPI)->
           done()
 
       describe 'DataSource', ->
+
         it 'should load  data in json format from "text/plain" response', (done)->
           @timeout( 10000)
           conf = {
@@ -299,6 +300,22 @@ test = (SLSAPI)->
             done()
           )
 
+        it 'should detect datasource witout categories', (done)->
+          @timeout( 10000)
+          conf = {
+            dataSources: [
+              func_code: "function (item){return item}",
+              url: "http://sl.wancharle.com.br/note/lista?notebook=5514580391f57bdf0d0ba65b"
+            ]}
+          api.config.parseOpcoes(conf,true)
+          dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
+          dataPool.loadAllData()
+          api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
+          api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
+            datapool.dataSources[0].categories.should.have.keys('Sem Categoria')
+            done()
+          )
+ 
         it 'should load data from especific data source only', (done)->
           conf = {
             dataSources: [
