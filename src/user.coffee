@@ -29,7 +29,7 @@ class User
     @storage = localStorage
     @usuario = this.getUsuario()
     if not @isLogged()
-      @logout()
+      @logout(true) # logout apenas no cliente
     @config.register(@)
 
   parseOpcoes: (@opcoes) ->
@@ -79,6 +79,15 @@ class User
       xhr.done((req)=> events.trigger(@config.id,User.EVENT_LOGOUT_SUCCESS,req))
       xhr.fail((req)=> events.trigger(@config.id,User.EVENT_LOGOUT_FAIL,req))
   
+  logout: (onlyClient) ->
+    @storage.removeItem('Usuario')
+    @usuario = null
+    @user_id = null
+    if not onlyClient
+      xhr= ajax.get(@logoutURL)
+      xhr.done((req)=> events.trigger(@config.id,User.EVENT_LOGOUT_SUCCESS,req))
+      xhr.fail((req)=> events.trigger(@config.id,User.EVENT_LOGOUT_FAIL,req))
+
   login: (u,p) =>
     #disable the button so we can't resubmit while we wait
     if (u and  p)

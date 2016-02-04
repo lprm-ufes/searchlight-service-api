@@ -2414,15 +2414,15 @@ module.exports = request;
 
     DataSource.prototype._getCatOrCreate = function(i) {
       var cat, icat, icatId;
+      icat = i.cat;
+      icatId = i.cat_id;
+      if (!icat) {
+        icat = "Sem Categoria";
+      }
       cat = this.categories[i.cat];
       if (cat) {
         return cat;
       } else {
-        icat = i.cat;
-        icatId = i.cat_id;
-        if (!icat) {
-          icat = "Sem Categoria";
-        }
         this.categories[icat] = [];
         this.categories_id[icat] = i.cat_id;
         return this.categories[icat];
@@ -3362,7 +3362,7 @@ module.exports = request;
       this.storage = localStorage;
       this.usuario = this.getUsuario();
       if (!this.isLogged()) {
-        this.logout();
+        this.logout(true);
       }
       this.config.register(this);
     }
@@ -3416,6 +3416,26 @@ module.exports = request;
       this.usuario = null;
       this.user_id = null;
       if (server) {
+        xhr = ajax.get(this.logoutURL);
+        xhr.done((function(_this) {
+          return function(req) {
+            return events.trigger(_this.config.id, User.EVENT_LOGOUT_SUCCESS, req);
+          };
+        })(this));
+        return xhr.fail((function(_this) {
+          return function(req) {
+            return events.trigger(_this.config.id, User.EVENT_LOGOUT_FAIL, req);
+          };
+        })(this));
+      }
+    };
+
+    User.prototype.logout = function(onlyClient) {
+      var xhr;
+      this.storage.removeItem('Usuario');
+      this.usuario = null;
+      this.user_id = null;
+      if (!onlyClient) {
         xhr = ajax.get(this.logoutURL);
         xhr.done((function(_this) {
           return function(req) {

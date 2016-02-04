@@ -72,7 +72,7 @@ test = (SLSAPI)->
  
       describe "logout", ->
         it "should allow logout a logged user", (done)->
-          api.user.logout(true)
+          api.user.logout()
           api.on SLSAPI.User.EVENT_LOGOUT_SUCCESS, ()-> done()
 
         it "and clear the saved user from localStorage", ->
@@ -82,7 +82,7 @@ test = (SLSAPI)->
           conf = {logoutURL : 'http://sl.wancharle.com.br/dont/work/logout/'}
           api2 = new SLSAPI(conf)
           api2.on SLSAPI.Config.EVENT_READY, (id)->
-            api2.user.logout(true)
+            api2.user.logout()
             api2.on SLSAPI.User.EVENT_LOGOUT_FAIL, (req)->
               done()
       
