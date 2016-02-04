@@ -72,7 +72,7 @@ test = (SLSAPI)->
  
       describe "logout", ->
         it "should allow logout a logged user", (done)->
-          api.user.logout()
+          api.user.logout(true)
           api.on SLSAPI.User.EVENT_LOGOUT_SUCCESS, ()-> done()
 
         it "and clear the saved user from localStorage", ->
@@ -82,7 +82,7 @@ test = (SLSAPI)->
           conf = {logoutURL : 'http://sl.wancharle.com.br/dont/work/logout/'}
           api2 = new SLSAPI(conf)
           api2.on SLSAPI.Config.EVENT_READY, (id)->
-            api2.user.logout()
+            api2.user.logout(true)
             api2.on SLSAPI.User.EVENT_LOGOUT_FAIL, (req)->
               done()
       
@@ -386,15 +386,25 @@ test = (SLSAPI)->
             } "
             ]
           }
+          teste = ->
+            dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
+            dataPool.loadAllData()
+            api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
+            api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
+
+              # cache deve retornar no maximo 1000 itens
+              # se ler da fonte original vai retornar o valor total 1411
+              datapool.dataSources[0].notes.length.should.equal(1411)
+              done()
+            )
+   
           api.config.parseOpcoes(conf,true)
-          dataPool = SLSAPI.dataPool.createDataPool(api.mashup)
-          dataPool.loadAllData()
-          api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
-          api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
-            datapool.dataSources[0].notes.length.should.equal(1411)
-            done()
-          )
-          
+          api.mashup.title = "teste json"
+          success = (mashupSaved)->
+             teste()
+          api.mashup.save(success,genericFail)
+
+         
         it 'should load data from original url if load from cache fail', (done)->
           @timeout(10000)
           conf = {
