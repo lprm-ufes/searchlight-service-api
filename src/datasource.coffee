@@ -62,15 +62,15 @@ class DataSource
 
   # return or create the list of itens in categorie i.cat
   _getCatOrCreate: (i)=>
+    icat = i.cat
+    icatId = i.cat_id
+    if not icat
+      icat = "Sem Categoria"
+
     cat=@categories[i.cat]
     if cat
       return cat
     else
-      icat = i.cat
-      icatId = i.cat_id
-      if not icat
-        icat = "Sem Categoria"
-
       @categories[icat] = []
       @categories_id[icat] = i.cat_id
       return @categories[icat]
