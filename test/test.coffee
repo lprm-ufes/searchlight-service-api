@@ -72,8 +72,12 @@ test = (SLSAPI)->
  
       describe "logout", ->
         it "should allow logout a logged user", (done)->
-          api.user.logout()
-          api.on SLSAPI.User.EVENT_LOGOUT_SUCCESS, ()-> done()
+          api.off(SLSAPI.User.EVENT_LOGIN_FINISH)
+          api.user.login('wan','123456')
+          api.on(SLSAPI.User.EVENT_LOGIN_FINISH,(err)->
+            api.user.logout()
+            api.on(SLSAPI.User.EVENT_LOGOUT_SUCCESS, ()-> done())
+          )
 
         it "and clear the saved user from localStorage", ->
           (api.user.getUsuario()==null).should.to.be.true
@@ -300,7 +304,7 @@ test = (SLSAPI)->
             done()
           )
 
-        it.only 'should detect datasource witout categories', (done)->
+        it 'should detect datasource witout categories', (done)->
           @timeout( 10000)
           conf = {
             dataSources: [
@@ -312,8 +316,7 @@ test = (SLSAPI)->
           dataPool.loadAllData()
           api.off(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP)
           api.on(SLSAPI.dataPool.DataPool.EVENT_LOAD_STOP, (datapool)->
-          
-            console.log(Object.keys(datapool.dataSources[0].categories))#.should.have.keys('Sem Categoria'))
+            #console.log(Object.keys(datapool.dataSources[0].categories))#.should.have.keys('Sem Categoria'))
             datapool.dataSources[0].categories.should.have.any.keys("Sem Categoria")
             datapool.dataSources[0].notes.length.should.equal(7)
             done()
