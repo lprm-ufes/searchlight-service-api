@@ -1,8 +1,8 @@
 genericFail = (err)->
   if typeof err == 'string'
-    console.log err
+    console.log 'genericFail',err
   else
-    console.log err.response.body
+    console.log 'genericFail', err.response.body, err
 
 test = (SLSAPI)->
   describe "SLSAPI", ->
@@ -399,13 +399,12 @@ test = (SLSAPI)->
           )
  
         it 'should not load data from cache if it already is from a searchlight server', (done)->
-          @timeout(10000)
+          @timeout(6000)
+          notebookCachedId = '56968894ee39149f1e935b32' # notebook cache para notebook externa http://wancharle.com.br/sl/portoalegre.cc.json
           conf = {
-            id:'5567928b95b248224048e516' #mashuptittle: possui 2 items...'nonotebook name = lprm_teste
+            id:'5567928b95b248224048e516' # mashuptittle: lprm_teste
             dataSources: [ 
-              url: "http://wancharle.com.br/sl/portoalegre.cc.json", func_code: "function (item){\n
-            item_convertido = {} ; item = item['cause']\n  ;item_convertido.longitude = \"\"+item.longitude\n
-            ;item_convertido.latitude = \"\" +item.latitude\n; return item_convertido;
+              url: "http://sl.wancharle.com.br/note/lista?notebook="+ notebookCachedId, func_code: "function (item){\n return item;
             } "
             ]
           }
@@ -423,9 +422,12 @@ test = (SLSAPI)->
    
           api.config.parseOpcoes(conf,true)
           api.mashup.title = "teste json"
+          api.user.login('wan','123456')
+          api.on(SLSAPI.User.EVENT_LOGIN_FINISH,(err)->
+            api.mashup.save(success,genericFail))
+
           success = (mashupSaved)->
              teste()
-          api.mashup.save(success,genericFail)
 
          
         it 'should load data from original url if load from cache fail', (done)->
