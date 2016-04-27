@@ -450,6 +450,7 @@ test = (SLSAPI)->
 
       describe 'DataSourceGoogle', ->
         it 'should load a spreadsheet from google drive with 5 valid elements', (done)->
+          @timeout(10000)
           configGoogle = {
             noteid:false # necessario para apagar a conf do test anterior
             dataSources: [

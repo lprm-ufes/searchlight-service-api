@@ -61,6 +61,7 @@ class User
     @usuario = @storage.getItem('Usuario')
     @user_id = @storage.getItem('user_id')
     @logginTime = @storage.getItem('logginTime')
+    @user_data = @storage.getItem('user_data')
     return @usuario
   
   setUsuario: (usuario,json)->
@@ -69,6 +70,7 @@ class User
     @storage.setItem('Usuario',@usuario)
     @storage.setItem('user_id',@user_id)
     @storage.setItem('logginTime',(new Date()).getTime())
+    @storage.setItem('user_data',JSON.stringify(json))
 
   logout: (server) ->
     @storage.removeItem('Usuario')

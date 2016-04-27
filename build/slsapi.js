@@ -3397,6 +3397,7 @@ module.exports = request;
       this.usuario = this.storage.getItem('Usuario');
       this.user_id = this.storage.getItem('user_id');
       this.logginTime = this.storage.getItem('logginTime');
+      this.user_data = this.storage.getItem('user_data');
       return this.usuario;
     };
 
@@ -3405,7 +3406,8 @@ module.exports = request;
       this.usuario = usuario;
       this.storage.setItem('Usuario', this.usuario);
       this.storage.setItem('user_id', this.user_id);
-      return this.storage.setItem('logginTime', (new Date()).getTime());
+      this.storage.setItem('logginTime', (new Date()).getTime());
+      return this.storage.setItem('user_data', JSON.stringify(json));
     };
 
     User.prototype.logout = function(server) {
