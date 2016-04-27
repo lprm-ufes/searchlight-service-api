@@ -61,7 +61,10 @@ class User
     @usuario = @storage.getItem('Usuario')
     @user_id = @storage.getItem('user_id')
     @logginTime = @storage.getItem('logginTime')
-    @user_data = @storage.getItem('user_data')
+    try
+      @user_data =JSON.parse(@storage.getItem('user_data'))
+    catch e
+      console.log(e)
     return @usuario
   
   setUsuario: (usuario,json)->
