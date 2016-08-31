@@ -22,12 +22,13 @@ class Config
         self.parseOpcoes(res.body)
         events.trigger(self.id,Config.EVENT_READY)
       xhr.fail (err)->
-        events.trigger(self.id,Config.EVENT_FAIL,{err:err,message:'Error: não foi possível carregar configuração da visualização'})
+        events.trigger(self.id,Config.EVENT_FAIL,{err:err,message:'Não foi possível carregar configuração do serviço.'})
     else
         setTimeout((()->events.trigger(self.id,Config.EVENT_READY)),5)
 
 
   parseOpcoes: (opcoes,view)->
+    @opcoesOriginais = opcoes
     @opcoes = new utils.Dicionario(opcoes)
     @serverURL = @opcoes.get 'serverURL', @serverURL or 'http://sl.wancharle.com.br'
     
